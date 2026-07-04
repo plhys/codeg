@@ -11,6 +11,7 @@ import {
   ChevronUp,
   ClipboardPaste,
   Cog,
+  ArrowUp,
   Copy,
   FileStack,
   FolderSearch,
@@ -22,7 +23,6 @@ import {
   Plus,
   Scissors,
   Search,
-  Send,
   Command,
   Sparkles,
   Square,
@@ -2346,7 +2346,8 @@ export function MessageInput({
       return
     }
 
-    // Prompting mode: enqueue instead of sending
+    // Prompting mode: enqueue instead of sending. The queued message auto-flushes
+    // when the current turn completes and the connection returns to "connected".
     if (isPrompting && onEnqueue) {
       onEnqueue(draft, showModeSelector ? effectiveModeId : null)
       resetComposer()
@@ -2363,8 +2364,8 @@ export function MessageInput({
     buildDraft,
     isEditingQueueItem,
     isPrompting,
-    onSaveQueueEdit,
     onEnqueue,
+    onSaveQueueEdit,
     onSend,
     effectiveModeId,
     showModeSelector,
@@ -2718,10 +2719,10 @@ export function MessageInput({
         onClick={handleSend}
         disabled={disabled || !hasSendableContent}
         size="icon"
-        className="h-8 w-8 rounded-r-none"
+        className="h-8 w-8 rounded-full bg-white text-black hover:bg-white/90"
         title={t("send")}
       >
-        <Send className="size-4" />
+        <ArrowUp className="size-4" />
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -2747,10 +2748,10 @@ export function MessageInput({
       onClick={handleSend}
       disabled={disabled || !hasSendableContent}
       size="icon"
-      className="h-8 w-8"
+      className="h-8 w-8 rounded-full bg-white text-black hover:bg-white/90"
       title={t("send")}
     >
-      <Send className="size-4" />
+      <ArrowUp className="size-4" />
     </Button>
   )
 
@@ -2846,12 +2847,12 @@ export function MessageInput({
                 // blank areas (padding, the dead space below a short message, the
                 // action-bar gaps) so the whole input reads as clickable-to-type;
                 // interactive controls re-assert their own cursor (see globals.css).
-                "codeg-composer-chrome @container relative flex flex-col rounded-xl border border-input bg-transparent transition-colors",
-                // Standard focus ring — always shown when the composer is
-                // focused (the plain default input style).
+                "codeg-composer-chrome @container relative flex flex-col rounded-xl border border-input bg-sidebar transition-colors",
+                // Focus: a quiet border brighten instead of a glow — the old
+                // shadow bloom read as too flashy next to the flat shell bars.
                 folderBranchPickerAttached
-                  ? "bg-background focus-within:border-ring focus-within:ring-[3px] focus-within:ring-inset focus-within:ring-ring/50"
-                  : "focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50",
+                  ? "focus-within:border-foreground/30"
+                  : "focus-within:border-foreground/30",
                 // Active session, tiled across multiple sessions: a gradient
                 // flows around the border to mark which tile is active — but ONLY
                 // while the composer itself is not focused. Focusing it hides the
@@ -2923,7 +2924,7 @@ export function MessageInput({
                 onExternalMenuKeyDown={handleExternalMenuKeyDown}
                 className="min-h-0 flex-1"
               />
-              <div className="flex shrink-0 items-end justify-between gap-1 px-2 pb-2">
+              <div className="flex shrink-0 items-end justify-between gap-1 px-2 pb-[3px]">
                 <div className="flex min-w-0 items-end gap-1">
                   <DropdownMenu onOpenChange={handleAddMenuOpenChange}>
                     <DropdownMenuTrigger asChild>

@@ -55,7 +55,7 @@ import {
 } from "@/contexts/workspace-context"
 import { RemoteConnectionGate } from "@/contexts/remote-connection-context"
 import { UpdateProvider } from "@/components/providers/update-provider"
-import { TabBar } from "@/components/tabs/tab-bar"
+import { TabKeyboardShortcuts } from "@/components/tabs/tab-keyboard-shortcuts"
 import { TerminalPanel } from "@/components/terminal/terminal-panel"
 import { AuxPanel } from "@/components/layout/aux-panel"
 import { FileWorkspaceTabBar } from "@/components/files/file-workspace-tab-bar"
@@ -249,7 +249,6 @@ function WorkspaceContent({ children }: { children: React.ReactNode }) {
               onFocusCapture={markConversationActive}
               inert={filesMaximized || undefined}
             >
-              <TabBar />
               <div className="relative flex-1 min-h-0 overflow-hidden">
                 {children}
               </div>
@@ -320,7 +319,6 @@ function MobileWorkspaceContent({ children }: { children: React.ReactNode }) {
       <div className="h-full min-h-0" inert={!isConversations || undefined}>
         {showConversation ? (
           <section className="flex h-full min-h-0 flex-col overflow-hidden">
-            <TabBar />
             <div className="relative flex-1 min-h-0 overflow-hidden">
               {children}
             </div>
@@ -741,9 +739,9 @@ function FolderWorkspaceShell({ children }: { children: React.ReactNode }) {
         <ResizableHandle
           withHandle
           disabled={!sidebarOpen}
-          className={
-            sidebarOpen ? "" : "pointer-events-none w-0 opacity-0 after:w-0"
-          }
+          // Sidebar width is fixed (MIN == MAX == 260px in sidebar-context), so
+          // the handle is purely visual — hide it in all states.
+          className="pointer-events-none w-0 opacity-0 after:w-0"
         />
 
         <ResizablePanel
@@ -754,7 +752,7 @@ function FolderWorkspaceShell({ children }: { children: React.ReactNode }) {
         >
           <main
             ref={mainContainerRef}
-            className="flex h-full min-h-0 flex-col overflow-hidden"
+            className="flex h-full min-h-0 flex-col overflow-hidden rounded-l-2xl"
           >
             <ResizablePanelGroup
               id={FOLDER_MAIN_GROUP_ID}
@@ -899,6 +897,7 @@ function WorkspaceLayoutInner({ children }: { children: React.ReactNode }) {
                                           listener calls openConversations() to
                                           surface a launcher-opened folder. */}
                                       <WorkspaceOpenFolderListener />
+                                      <TabKeyboardShortcuts />
                                       <FolderLayoutShell>
                                         {children}
                                       </FolderLayoutShell>

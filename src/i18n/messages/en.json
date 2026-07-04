@@ -1197,7 +1197,9 @@
       "noChats": "No chats",
       "newChatAction": "New chat",
       "automations": "Automations",
-      "loadingSubsessions": "Loading sub-conversations…"
+      "loadingSubsessions": "Loading sub-conversations…",
+      "viewChats": "Chats",
+      "viewProjects": "Projects"
     },
     "conversation": {
       "reloadFailed": "Failed to reload conversation: {message}",
@@ -2091,7 +2093,8 @@
         "saveEdit": "Save",
         "cancelEdit": "Cancel edit",
         "editItem": "Edit",
-        "deleteItem": "Remove"
+        "deleteItem": "Remove",
+        "jumpQueue": "Send first"
       },
       "welcomeInputPanel": {
         "agentsSettingsPath": "Settings > Agents",
@@ -2257,7 +2260,9 @@
         "tokenCacheWrite": "Cache write",
         "duration": "Duration",
         "completedAt": "Completed at",
-        "jumpToPreviousUserMessage": "Jump to user message"
+        "jumpToPreviousUserMessage": "Jump to user message",
+        "forkAndSend": "Fork & Send",
+        "forkSessionSuccess": "Forked successfully"
       },
       "liveTurnStats": {
         "thinking": "Thinking...",
@@ -2568,7 +2573,9 @@
         "switchedToChatMode": "Switched to chat mode",
         "openStashFailed": "Failed to open stash window",
         "openMergeFailed": "Failed to open merge window"
-      }
+      },
+      "forkAndSend": "Fork & Send",
+      "forkSessionSuccess": "Forked successfully"
     },
     "cloneDialog": {
       "title": "Clone Repository",

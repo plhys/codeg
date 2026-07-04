@@ -1197,7 +1197,9 @@
       "noChats": "没有聊天",
       "newChatAction": "新建聊天",
       "automations": "自动化",
-      "loadingSubsessions": "正在加载子会话…"
+      "loadingSubsessions": "正在加载子会话…",
+      "viewChats": "对话",
+      "viewProjects": "项目"
     },
     "conversation": {
       "reloadFailed": "会话重新加载失败：{message}",
@@ -2091,7 +2093,8 @@
         "saveEdit": "保存",
         "cancelEdit": "取消编辑",
         "editItem": "编辑",
-        "deleteItem": "删除"
+        "deleteItem": "删除",
+        "jumpQueue": "插队发送"
       },
       "welcomeInputPanel": {
         "agentsSettingsPath": "设置 > Agents",
@@ -2257,7 +2260,9 @@
         "tokenCacheWrite": "缓存写入",
         "duration": "耗时",
         "completedAt": "完成时间",
-        "jumpToPreviousUserMessage": "跳转到上一条用户消息"
+        "jumpToPreviousUserMessage": "跳转到上一条用户消息",
+        "forkAndSend": "分叉并发送",
+        "forkSessionSuccess": "分叉成功"
       },
       "liveTurnStats": {
         "thinking": "思考中...",
@@ -2568,7 +2573,9 @@
         "switchedToChatMode": "已切换到聊天模式",
         "openStashFailed": "打开贮藏窗口失败",
         "openMergeFailed": "打开合并窗口失败"
-      }
+      },
+      "forkAndSend": "分叉并发送",
+      "forkSessionSuccess": "分叉成功"
     },
     "cloneDialog": {
       "title": "克隆仓库",

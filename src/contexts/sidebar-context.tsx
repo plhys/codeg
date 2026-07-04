@@ -16,9 +16,11 @@ import {
 
 const STORAGE_KEY = "workspace:left-sidebar"
 
-const DEFAULT_WIDTH = 320
-const MIN_WIDTH = 200
-const MAX_WIDTH = 600
+// Fixed-width sidebar: MIN == MAX == DEFAULT, so the panel cannot be resized.
+// The accompanying resize handle is hidden in the workspace layout.
+const DEFAULT_WIDTH = 260
+const MIN_WIDTH = 260
+const MAX_WIDTH = 260
 const DEFAULT_IS_OPEN = true
 
 interface SidebarContextValue {

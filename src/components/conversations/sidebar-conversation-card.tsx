@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   Info,
   ChevronRight,
+  LayoutGrid,
 } from "lucide-react"
 import { useTranslations } from "next-intl"
 import type { DbConversationSummary, ConversationStatus } from "@/lib/types"
@@ -121,6 +122,9 @@ interface SidebarConversationCardProps {
   expanded?: boolean
   /** Toggle this conversation's sub-session subtree (lazily loads on expand). */
   onToggleExpand?: (id: number) => void
+  /** Tile mode state & toggle, forwarded from TabContext. */
+  isTileMode?: boolean
+  onToggleTile?: () => void
 }
 
 export const SidebarConversationCard = memo(function SidebarConversationCard({
@@ -139,11 +143,14 @@ export const SidebarConversationCard = memo(function SidebarConversationCard({
   hasChildren = false,
   expanded = false,
   onToggleExpand,
+  isTileMode = false,
+  onToggleTile,
 }: SidebarConversationCardProps) {
   const t = useTranslations("Folder.conversationCard")
   const tSidebar = useTranslations("Folder.sidebar")
   const tStatus = useTranslations("Folder.statusLabels")
   const tDetails = useTranslations("Folder.sessionDetails")
+  const tTabs = useTranslations("Folder.tabs")
   const [renameOpen, setRenameOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [detailsOpen, setDetailsOpen] = useState(false)
@@ -541,6 +548,11 @@ export const SidebarConversationCard = memo(function SidebarConversationCard({
               )}
             </ContextMenuSubContent>
           </ContextMenuSub>
+          <ContextMenuSeparator />
+          <ContextMenuItem onSelect={() => onToggleTile?.()}>
+            <LayoutGrid className="h-4 w-4" />
+            {isTileMode ? tTabs("untileDisplay") : tTabs("tileDisplay")}
+          </ContextMenuItem>
           <ContextMenuSeparator />
           <ContextMenuItem
             variant="destructive"

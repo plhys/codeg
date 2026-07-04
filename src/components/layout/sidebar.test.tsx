@@ -29,6 +29,9 @@ vi.mock("@/contexts/sidebar-context", () => ({
 vi.mock("@/contexts/active-folder-context", () => ({
   useActiveFolder: () => ({ activeFolder: mockState.activeFolder }),
 }))
+vi.mock("@/contexts/app-workspace-context", () => ({
+  useAppWorkspace: () => ({ openFolder: vi.fn() }),
+}))
 vi.mock("@/contexts/tab-context", () => ({
   useTabContext: () => ({
     openNewConversationTab: spies.openNewConversationTab,
@@ -60,6 +63,21 @@ vi.mock("@/hooks/use-shortcut-settings", () => ({
   }),
 }))
 vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }))
+// Folder-action dependencies pulled into the sidebar bottom bar.
+vi.mock("@/components/layout/clone-dialog", () => ({
+  CloneDialog: () => null,
+}))
+vi.mock("@/components/shared/directory-browser-dialog", () => ({
+  DirectoryBrowserDialog: () => null,
+}))
+vi.mock("@/lib/api", () => ({ openProjectBootWindow: vi.fn() }))
+vi.mock("@/lib/platform", () => ({
+  isDesktop: () => true,
+  openFileDialog: vi.fn(),
+}))
+vi.mock("@/lib/transport", () => ({
+  getActiveRemoteConnectionId: () => null,
+}))
 
 function renderSidebar() {
   return render(

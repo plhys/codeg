@@ -49,6 +49,7 @@ interface ChatInputProps {
   onQueueReorder?: (items: QueuedMessage[]) => void
   onQueueEdit?: (id: string) => void
   onQueueDelete?: (id: string) => void
+  onJumpQueue?: (id: string) => void
   editingItemId?: string | null
   editingDraftText?: string | null
   editingDraftBlocks?: PromptInputBlock[] | null
@@ -104,6 +105,7 @@ export const ChatInput = memo(function ChatInput({
   onQueueReorder,
   onQueueEdit,
   onQueueDelete,
+  onJumpQueue,
   editingItemId,
   editingDraftText,
   editingDraftBlocks,
@@ -126,7 +128,7 @@ export const ChatInput = memo(function ChatInput({
 
   return (
     <div
-      className={cn("pt-0 pb-1", !flush && "px-4")}
+      className={cn("pt-0 pb-0 mb-2.5", !flush && "px-4")}
       onContextMenu={(event) => event.stopPropagation()}
     >
       {queue &&
@@ -139,6 +141,7 @@ export const ChatInput = memo(function ChatInput({
             onReorder={onQueueReorder}
             onEdit={onQueueEdit}
             onDelete={onQueueDelete}
+            onJumpQueue={onJumpQueue}
             editingItemId={editingItemId ?? null}
           />
         )}

@@ -34,7 +34,6 @@ import {
 import { AppTitleBar } from "./app-title-bar"
 import { BranchDropdown } from "./branch-dropdown"
 import { CommandDropdown } from "./command-dropdown"
-import { NewFolderDropdown } from "./new-folder-dropdown"
 import { RemoteWorkspaceDropdown } from "./remote-workspace-dropdown"
 import { SearchCommandDialog } from "@/components/conversations/search-command-dialog"
 import { DirectoryBrowserDialog } from "@/components/shared/directory-browser-dialog"
@@ -85,7 +84,7 @@ export function FolderTitleBar() {
   }, [])
 
   const handleOpenFolder = useCallback(async () => {
-    // See NewFolderDropdown / SidebarConversationList for the same logic:
+    // See SidebarConversationList for the same logic:
     // the native Tauri dialog browses the LOCAL filesystem, so when the
     // user is bound to a remote workspace we must fall through to the
     // in-app DirectoryBrowserDialog (which browses the remote host via
@@ -188,7 +187,6 @@ export function FolderTitleBar() {
               >
                 <Menu className="h-4 w-4" />
               </Button>
-              <NewFolderDropdown />
               <RemoteWorkspaceDropdown />
               <BranchDropdown />
             </div>
@@ -210,7 +208,6 @@ export function FolderTitleBar() {
                 >
                   <PanelLeft className="h-3.5 w-3.5" />
                 </Button>
-                <NewFolderDropdown />
                 <RemoteWorkspaceDropdown />
                 <Button
                   variant="ghost"

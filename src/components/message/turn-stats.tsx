@@ -7,6 +7,7 @@ import {
   CheckIcon,
   Coins,
   CopyIcon,
+  GitFork,
   Timer,
 } from "lucide-react"
 import { useLocale, useTranslations } from "next-intl"
@@ -32,6 +33,8 @@ interface TurnStatsProps {
   copyText?: string
   /** ISO timestamp marking when the assistant reply finished. */
   completedAt?: string | null
+  /** Fork the session and send a new message from this point. */
+  onFork?: () => void
 }
 
 const iconButtonClass =
@@ -46,6 +49,7 @@ export function TurnStats({
   isResponseComplete = true,
   copyText = "",
   completedAt,
+  onFork,
 }: TurnStatsProps) {
   const locale = useLocale()
   const t = useTranslations("Folder.chat.messageList")
@@ -264,6 +268,23 @@ export function TurnStats({
                   {completedTooltip}
                 </span>
               </div>
+            </TooltipContent>
+          </Tooltip>
+        )}
+        {onFork && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={onFork}
+                className={cn(iconButtonClass, "ml-auto text-muted-foreground/50 hover:text-muted-foreground")}
+                aria-label={t("forkAndSend")}
+              >
+                <GitFork aria-hidden="true" className="h-3.5 w-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">
+              {t("forkAndSend")}
             </TooltipContent>
           </Tooltip>
         )}

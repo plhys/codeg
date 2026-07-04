@@ -41,7 +41,7 @@ export function AppTitleBar({
   return (
     <div
       className={cn(
-        "relative shrink-0 border-b bg-muted/70 select-none",
+        "relative shrink-0 bg-sidebar select-none",
         isMobile ? "h-11" : "h-8",
         className
       )}

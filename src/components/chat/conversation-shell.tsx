@@ -76,6 +76,7 @@ interface ConversationShellProps {
   onQueueReorder?: (items: QueuedMessage[]) => void
   onQueueEdit?: (id: string) => void
   onQueueDelete?: (id: string) => void
+  onJumpQueue?: (id: string) => void
   editingItemId?: string | null
   editingDraftText?: string | null
   editingDraftBlocks?: PromptInputBlock[] | null
@@ -129,6 +130,7 @@ export function ConversationShell({
   onQueueReorder,
   onQueueEdit,
   onQueueDelete,
+  onJumpQueue,
   editingItemId,
   editingDraftText,
   editingDraftBlocks,
@@ -253,6 +255,7 @@ export function ConversationShell({
               onQueueReorder={onQueueReorder}
               onQueueEdit={onQueueEdit}
               onQueueDelete={onQueueDelete}
+              onJumpQueue={onJumpQueue}
               editingItemId={editingItemId}
               editingDraftText={editingDraftText}
               editingDraftBlocks={editingDraftBlocks}

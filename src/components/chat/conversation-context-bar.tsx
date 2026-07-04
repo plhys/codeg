@@ -10,15 +10,12 @@ import {
   useState,
 } from "react"
 import { useTranslations } from "next-intl"
-import { toast } from "sonner"
 import {
   Check,
   ChevronDown,
   ChevronRight,
-  Folder,
   GitBranch,
   Loader2,
-  MessageSquare,
 } from "lucide-react"
 import type { OverlayScrollbarsComponentRef } from "overlayscrollbars-react"
 import { useAppWorkspace } from "@/contexts/app-workspace-context"
@@ -46,16 +43,9 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-  CommandSeparator,
 } from "@/components/ui/command"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { cn } from "@/lib/utils"
-import {
-  excludeChatFolders,
-  filterTopLevelFolders,
-  resolveFolderDisplayName,
-  resolvePickerSelectedFolderId,
-} from "@/lib/folder-display"
 import { useSwitchToBranch } from "@/hooks/use-switch-to-branch"
 
 interface ConversationContextBarProps {
@@ -137,9 +127,8 @@ export const ConversationFolderBranchPicker = memo(
     tabId,
   }: ConversationFolderBranchPickerProps) {
     const t = useTranslations("Folder.conversationContextBar")
-    const { tabs, activeTabId, openNewConversationTab, openChatModeTab } =
-      useTabContext()
-    const { folders, allFolders, branches } = useAppWorkspace()
+    const { tabs, activeTabId } = useTabContext()
+    const { allFolders, branches } = useAppWorkspace()
     const switchToBranch = useSwitchToBranch()
 
     const ownTab = useMemo(() => {
@@ -155,92 +144,22 @@ export const ConversationFolderBranchPicker = memo(
       [ownTab, allFolders]
     )
 
-    // The folder picker lists only top-level repos — worktree folders
-    // (`parent_id != null`) are reached through the branch picker, not here, so
-    // they're hidden to keep this picker a clean repo switcher. Hidden chat
-    // folders are excluded too (they're a per-conversation implementation
-    // detail, not a switchable repo).
-    const topLevelFolders = useMemo(
-      () => excludeChatFolders(filterTopLevelFolders(folders)),
-      [folders]
-    )
-
     if (!ownTab) return null
     // Chat mode: either a draft flagged `isChat` (no folder yet) or a bound
-    // conversation whose folder is a hidden chat folder. Show the folder
-    // chip (so the user can switch back to a real folder while drafting) but
-    // suppress the branch picker — a folderless chat has no git branch.
+    // conversation whose folder is a hidden chat folder. Only the branch
+    // picker is shown below the composer (folder switching during a
+    // conversation just opens a new tab, not useful inline).
     const isChatMode = ownTab.isChat === true || ownFolder?.kind === "chat"
     if (!ownFolder && !isChatMode) return null
 
-    const isNewConversation = ownTab.conversationId == null
     const currentBranch =
       isChatMode || !ownFolder
         ? null
         : (branches.get(ownFolder.id) ?? ownFolder.git_branch ?? null)
     const showBranchPicker = currentBranch != null
-    // Worktree folders surface their parent (root repo) name here; the picker's
-    // own list below keeps real folder names/paths for selection, and every
-    // git/path operation still uses `ownFolder` (the worktree) unchanged.
-    const displayFolderName = isChatMode
-      ? t("chatModeLabel")
-      : resolveFolderDisplayName(ownFolder!, allFolders)
-    // When the conversation lives in a worktree, the picker highlights its
-    // parent repo (the worktree itself isn't listed). Display-only — the tab's
-    // real folder/working dir is untouched. Chat mode has no real folder, so
-    // `-1` (no row) is highlighted.
-    const pickerSelectedId =
-      isChatMode || !ownFolder ? -1 : resolvePickerSelectedFolderId(ownFolder)
 
     return (
       <>
-        <FolderPicker
-          folders={topLevelFolders}
-          currentFolderId={pickerSelectedId}
-          currentFolderName={displayFolderName}
-          title={`${t("folderTitle")}: ${displayFolderName}`}
-          editable={isNewConversation}
-          onSelect={async (folderId) => {
-            const target = folders.find((f) => f.id === folderId)
-            if (!target) return
-            try {
-              // Route through openNewConversationTab so the target folder's
-              // saved default agent is applied. The function's existing-
-              // draft branch reuses ownTab via the singleton invariant and
-              // runs the disconnect-then-patch dance for folder+agent
-              // changes. `inheritFromActive: true` preserves the user's
-              // current agent when the target folder has no pinned default
-              // — "I'm switching folders, keep my workflow".
-              openNewConversationTab(target.id, target.path, {
-                inheritFromActive: true,
-              })
-              toast.success(t("toasts.folderChanged", { name: target.name }))
-            } catch (err) {
-              console.error(
-                "[ConversationFolderBranchPicker] switch folder failed:",
-                err
-              )
-              toast.error(t("toasts.openFolderFailed"))
-            }
-          }}
-          labelEmpty={t("noFolders")}
-          labelSearch={t("searchFolder")}
-          labelChatMode={t("chatModeLabel")}
-          isChatMode={isChatMode}
-          onSelectChatMode={() => {
-            try {
-              openChatModeTab()
-              toast.success(t("toasts.switchedToChatMode"))
-            } catch (err) {
-              console.error(
-                "[ConversationFolderBranchPicker] switch to chat mode failed:",
-                err
-              )
-              toast.error(t("toasts.openFolderFailed"))
-            }
-          }}
-        />
-
         {showBranchPicker && ownFolder && (
           <BranchPicker
             folderId={ownFolder.id}
@@ -274,142 +193,26 @@ ConversationFolderBranchPicker.displayName = "ConversationFolderBranchPicker"
 
 /**
  * Mirror the visibility check inside `ConversationFolderBranchPicker` so the
- * parent can decide whether to render its wrapper row at all. The picker
- * itself returns `null` when no tab/folder is resolved (e.g. while folders
- * are still loading on first paint), and the parent must avoid rendering an
- * otherwise-empty wrapper in that interval.
+ * parent can decide whether to render its wrapper row at all. After removing the
+ * FolderPicker (folder switching during a conversation just opens a new tab, not
+ * useful inline), the row only shows when the branch picker is available.
  */
 export function useConversationFolderBranchPickerVisible(
   tabId?: string | null
 ): boolean {
   const { tabs, activeTabId } = useTabContext()
-  const { allFolders } = useAppWorkspace()
+  const { allFolders, branches } = useAppWorkspace()
   const lookupId = tabId ?? activeTabId
   const ownTab = tabs.find((x) => x.id === lookupId) ?? null
   const ownFolder = ownTab
     ? (allFolders.find((f) => f.id === ownTab.folderId) ?? null)
     : null
-  // Chat-mode drafts have no resolvable folder yet, but the picker row must
-  // still show so the folder chip (and the "no-folder mode" item) are reachable.
-  return Boolean(ownTab && (ownFolder || ownTab.isChat))
+  if (!ownTab || !ownFolder || ownFolder.kind === "chat") return false
+  // Only visible when git branch info is available.
+  const currentBranch =
+    branches.get(ownFolder.id) ?? ownFolder.git_branch ?? null
+  return currentBranch != null
 }
-
-// ============================================================================
-// FolderPicker
-// ============================================================================
-
-interface FolderPickerProps {
-  folders: { id: number; name: string; path: string }[]
-  currentFolderId: number
-  currentFolderName: string
-  title: string
-  editable: boolean
-  onSelect: (folderId: number) => void | Promise<void>
-  labelEmpty: string
-  labelSearch: string
-  /** Label for the pinned "no-folder (chat) mode" item at the bottom. */
-  labelChatMode: string
-  /** Whether the draft is currently in chat mode (shows the check mark). */
-  isChatMode: boolean
-  /** Select folderless chat mode. */
-  onSelectChatMode: () => void
-}
-
-const FolderPicker = memo(function FolderPicker({
-  folders,
-  currentFolderId,
-  currentFolderName,
-  title,
-  editable,
-  onSelect,
-  labelEmpty,
-  labelSearch,
-  labelChatMode,
-  isChatMode,
-  onSelectChatMode,
-}: FolderPickerProps) {
-  const [open, setOpen] = useState(false)
-
-  const trigger = (
-    <Button
-      variant="ghost"
-      size="xs"
-      title={title}
-      // `px-1.5` (rem scale, so it tracks UI zoom) matches the composer "+"
-      // button's icon breathing room; paired with the row's `pl-2` it lands the
-      // folder icon on the same column as the centered "+" icon.
-      className={cn(
-        "min-w-0 gap-0.5 px-1.5",
-        !editable && "cursor-default opacity-60 hover:bg-transparent"
-      )}
-    >
-      <Folder className="size-3 shrink-0 text-muted-foreground" />
-      <span className="max-w-[140px] truncate">{currentFolderName}</span>
-      <ChevronDown className="size-3 shrink-0 text-muted-foreground/60" />
-    </Button>
-  )
-
-  if (!editable) {
-    return trigger
-  }
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>{trigger}</PopoverTrigger>
-      <PopoverContent align="start" className="p-0 w-72 overflow-hidden">
-        <Command className="rounded-2xl">
-          <CommandInput placeholder={labelSearch} />
-          <CommandList>
-            <CommandEmpty>{labelEmpty}</CommandEmpty>
-            <CommandGroup>
-              {folders.map((f) => (
-                <CommandItem
-                  key={f.id}
-                  value={`${f.name} ${f.path}`}
-                  onSelect={() => {
-                    setOpen(false)
-                    void onSelect(f.id)
-                  }}
-                >
-                  <Folder className="h-4 w-4" />
-                  <div className="flex flex-col min-w-0 flex-1">
-                    <span className="truncate font-medium">{f.name}</span>
-                    <span className="truncate text-xs text-muted-foreground">
-                      {f.path}
-                    </span>
-                  </div>
-                  {f.id === currentFolderId && (
-                    <Check className="h-4 w-4 shrink-0" />
-                  )}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-            <CommandSeparator />
-            {/* Pinned to the bottom: folderless "chat mode". A stable, plain
-                `value` (no folder name/path) keeps it visible under any search
-                filter so the entry point is always reachable. */}
-            <CommandGroup forceMount>
-              <CommandItem
-                value="__chat_mode__ no folder chat mode"
-                forceMount
-                onSelect={() => {
-                  setOpen(false)
-                  onSelectChatMode()
-                }}
-              >
-                <MessageSquare className="h-4 w-4" />
-                <span className="flex-1 truncate font-medium">
-                  {labelChatMode}
-                </span>
-                {isChatMode && <Check className="h-4 w-4 shrink-0" />}
-              </CommandItem>
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  )
-})
 
 // ============================================================================
 // BranchPicker

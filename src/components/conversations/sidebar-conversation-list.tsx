@@ -108,7 +108,6 @@ import { SidebarSectionHeader } from "./sidebar-section-header"
 import { ConversationManageDialog } from "./conversation-manage-dialog"
 import { CloneDialog } from "@/components/layout/clone-dialog"
 import { DirectoryBrowserDialog } from "@/components/shared/directory-browser-dialog"
-import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import {
@@ -554,6 +553,8 @@ export interface SidebarConversationListProps {
   showCompleted?: boolean
   sortMode?: SidebarSortMode
   sectionOrder?: SidebarSectionOrder
+  /** When set, filters the list to show only the given section group. */
+  visibleSections?: "all" | "chats" | "projects"
 }
 
 export function SidebarConversationList({
@@ -561,6 +562,7 @@ export function SidebarConversationList({
   showCompleted = true,
   sortMode = "created",
   sectionOrder = "folders-first",
+  visibleSections = "all",
 }: SidebarConversationListProps & {
   ref?: Ref<SidebarConversationListHandle>
 }) {
@@ -593,9 +595,10 @@ export function SidebarConversationList({
     closeConversationTab,
     closeTabsByFolder,
     openNewConversationTab,
-    openChatModeTab,
     activeTabId,
     tabs,
+    isTileMode,
+    toggleTileMode,
   } = useTabContext()
   const { openConversations } = useWorkbenchRoute()
   const { addTask, updateTask } = useTaskContext()
@@ -995,6 +998,34 @@ export function SidebarConversationList({
       childrenLoading,
     ]
   )
+
+  // Filter rows based on visibleSections toggle ("chats" = pinned + chat
+  // conversations; "projects" = pinned + folder conversations). Walk the
+  // flat row array with a current-section tracker: a SectionHeaderRow sets
+  // the context for all rows that follow until the next SectionHeaderRow.
+  const visibleRows = useMemo(() => {
+    if (visibleSections === "all") return rows
+    // Map toggle names to actual section header IDs:
+    // "chats" → "chats", "projects" → "folders"
+    const targetSection = visibleSections === "chats" ? "chats" : "folders"
+    const visible: SidebarRow[] = []
+    let currentSection: "pinned" | "folders" | "chats" | null = null
+    for (const row of rows) {
+      if (row.kind === "section") {
+        currentSection = row.section
+      }
+      // Always show pinned rows + rows whose section matches the active view.
+      if (
+        currentSection === "pinned" ||
+        currentSection === targetSection ||
+        // Folder headers belong to the folders section.
+        (targetSection === "folders" && row.kind === "folder")
+      ) {
+        visible.push(row)
+      }
+    }
+    return visible
+  }, [rows, visibleSections])
 
   // Latest snapshots for the imperative scroll/drag code paths, refreshed every
   // render so the window listeners and scrollToActive read current values
@@ -1773,10 +1804,6 @@ export function SidebarConversationList({
   }, [openFolder])
 
   // Stable trigger for the Clone Repository dialog, passed to the memoized
-  // Folders section header. Empty deps (setCloneOpen is a stable setter) so the
-  // header doesn't re-render on every parent render.
-  const handleOpenCloneDialog = useCallback(() => setCloneOpen(true), [])
-
   const handleBrowserSelect = useCallback(
     (path: string) => {
       openFolder(path).catch((err) => {
@@ -1861,30 +1888,15 @@ export function SidebarConversationList({
 
   const renderRow = (row: SidebarRow) => {
     if (row.kind === "section") {
-      // Section headers are not folder-scoped, so they skip themeWrap.
+      // The 对话/项目 toggle replaces the "聊天" / "文件夹" section titles,
+      // so skip those two headers. Keep "pinned" for its collapse toggle.
+      if (row.section === "chats" || row.section === "folders") return null
+      // Only "pinned" section header remains here.
       return (
         <SidebarSectionHeader
           section={row.section}
           expanded={row.expanded}
           onToggle={toggleSection}
-          // The chats section gets an always-visible New-chat button (its primary
-          // entry point, reachable even when empty). `openChatModeTab` is a stable
-          // context callback, so the memo holds.
-          onNewChat={row.section === "chats" ? openChatModeTab : undefined}
-          // The folders section gets two right-edge hover actions mirroring the
-          // top-of-page NewFolderDropdown: Open Folder and Clone Repository.
-          // Both handlers are stable, so the memo holds.
-          onOpenFolder={
-            row.section === "folders" ? handleOpenFolderAction : undefined
-          }
-          onCloneRepository={
-            row.section === "folders" ? handleOpenCloneDialog : undefined
-          }
-          // Every section header carries a top gap: it separates "Folders" from
-          // the "Pinned" section above it, and — now that a fixed New chat /
-          // Search region sits above the scrolled list — gives the first section
-          // (Pinned, or Folders when nothing is pinned) the same breathing room
-          // below that region instead of butting right up against it.
           topGap
         />
       )
@@ -1973,6 +1985,8 @@ export function SidebarConversationList({
         hasChildren={conv.child_count > 0}
         expanded={conversationExpanded.has(conv.id)}
         onToggleExpand={toggleConversation}
+        isTileMode={isTileMode}
+        onToggleTile={toggleTileMode}
       />
     )
   }
@@ -2009,34 +2023,14 @@ export function SidebarConversationList({
           </p>
         </div>
       ) : showEmptyWorkspaceActions ? (
-        <div className="flex-1 flex flex-col items-center justify-center px-3 gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full max-w-[14rem] justify-start"
-            onClick={handleOpenFolderAction}
-          >
-            <FolderOpenDot className="h-3.5 w-3.5 mr-1.5" />
-            {tFolderDropdown("openFolder")}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full max-w-[14rem] justify-start"
-            onClick={() => setCloneOpen(true)}
-          >
-            <FolderGit2 className="h-3.5 w-3.5 mr-1.5" />
-            {tFolderDropdown("cloneRepository")}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full max-w-[14rem] justify-start"
-            onClick={handleProjectBoot}
-          >
-            <Rocket className="h-3.5 w-3.5 mr-1.5" />
-            {tFolderDropdown("projectBoot")}
-          </Button>
+        // Empty workspace: the folder actions (open folder / clone / project
+        // launcher) live in the sidebar's bottom action bar now, so the center
+        // only needs a quiet hint. Right-click still works via the ContextMenu
+        // branch below once a folder exists.
+        <div className="flex-1 flex items-center justify-center px-3">
+          <p className="text-center text-xs text-muted-foreground/70">
+            {t("emptyFolderHint")}
+          </p>
         </div>
       ) : (
         <ContextMenu>
@@ -2072,7 +2066,7 @@ export function SidebarConversationList({
                   <Virtualizer
                     ref={virtualizerRef}
                     scrollRef={viewportRef}
-                    data={rows}
+                    data={visibleRows}
                     itemSize={32}
                     bufferSize={400}
                     onScroll={handleVirtuaScroll}

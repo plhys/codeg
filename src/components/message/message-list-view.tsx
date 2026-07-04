@@ -65,7 +65,6 @@ import {
   type MessageNavEntry,
 } from "@/components/message/conversation-message-nav"
 import type { MessageScrollContextValue } from "@/components/message/message-scroll-context"
-import { extractSessionFilesGrouped } from "@/lib/session-files"
 import { unescapeComposerText } from "@/lib/composer-copy-text"
 import { useStickToBottomContext } from "use-stick-to-bottom"
 
@@ -94,6 +93,8 @@ interface MessageListViewProps {
    * conversation view; disabled in compact embeds (e.g. the sub-agent dialog).
    */
   showMessageNav?: boolean
+  /** Fork the current session from this turn. */
+  onFork?: () => void
 }
 
 interface ResolvedMessageGroup {
@@ -419,6 +420,7 @@ const HistoricalMessageGroup = memo(function HistoricalMessageGroup({
   previousUserIndex = null,
   isResponseComplete = true,
   sourceTurns,
+  onFork,
 }: {
   group: ResolvedMessageGroup
   dimmed?: boolean
@@ -426,6 +428,7 @@ const HistoricalMessageGroup = memo(function HistoricalMessageGroup({
   previousUserIndex?: number | null
   isResponseComplete?: boolean
   sourceTurns?: MessageTurn[]
+  onFork?: () => void
 }) {
   if (group.role === "system") {
     return <CollapsibleSystemMessage group={group} />
@@ -469,6 +472,7 @@ const HistoricalMessageGroup = memo(function HistoricalMessageGroup({
           isResponseComplete={isResponseComplete}
           copyText={extractTextFromParts(group.parts)}
           completedAt={group.completed_at}
+          onFork={onFork}
         />
       )}
     </div>
@@ -527,6 +531,7 @@ export function MessageListView({
   onReload,
   onNewSession,
   showMessageNav = true,
+  onFork,
 }: MessageListViewProps) {
   const t = useTranslations("Folder.chat.messageList")
   const sharedT = useTranslations("Folder.chat.shared")
@@ -708,6 +713,7 @@ export function MessageListView({
               previousUserIndex={item.previousUserIndex}
               isResponseComplete={item.phase === "persisted"}
               sourceTurns={item.sourceTurns}
+              onFork={onFork}
             />
           </div>
         )
@@ -717,7 +723,7 @@ export function MessageListView({
       default:
         return null
     }
-  }, [])
+  }, [onFork])
 
   const emptyState = useMemo(
     () =>
@@ -773,9 +779,6 @@ export function MessageListView({
   // Lifted scroll handle so the panel (which lives in the overlay stack, outside
   // the MessageScrollProvider subtree) can drive scrollToIndex.
   const scrollApiRef = useRef<MessageScrollContextValue | null>(null)
-  // Collapse state is owned here (not in the panel) so the expensive per-file
-  // `navEntries` is computed only while the panel is open.
-  const [navExpanded, setNavExpanded] = useState(false)
 
   // Cheap user-message tally for the collapsed chip — counts user turns without
   // parsing any file diffs.
@@ -788,47 +791,30 @@ export function MessageListView({
     return count
   }, [showMessageNav, threadItems])
 
-  // One entry per user message — including ones with no edits (placeholders).
-  // Computed lazily: only while the panel is expanded, since
-  // `extractSessionFilesGrouped` parses every turn's diffs. Collapsed (the
-  // default) it stays EMPTY, keeping the streaming hot path free of diff parsing.
+  // Dot-navigation entries: one per user message, lightweight (threadIndex +
+  // label only, no file diffs). Always computed since it's just a map lookup.
   const navEntries = useMemo<MessageNavEntry[]>(() => {
-    if (!showMessageNav || !navExpanded) return EMPTY_NAV_ENTRIES
-    const turns = timelineTurns.map((item) => item.turn)
-    const groups = extractSessionFilesGrouped(turns, { includeEmpty: true })
-    if (groups.length === 0) return EMPTY_NAV_ENTRIES
-
-    const indexByTurnId = new Map<string, number>()
+    if (!showMessageNav) return EMPTY_NAV_ENTRIES
+    const entries: MessageNavEntry[] = []
     for (let i = 0; i < threadItems.length; i++) {
       const item = threadItems[i]
-      if (item.kind === "turn" && item.group.role === "user") {
-        indexByTurnId.set(item.group.id, i)
-      }
-    }
-
-    const entries: MessageNavEntry[] = []
-    for (const group of groups) {
-      const threadIndex = indexByTurnId.get(group.userTurnId)
-      if (threadIndex == null) continue
-      let additions = 0
-      let deletions = 0
-      for (const file of group.files) {
-        additions += file.additions
-        deletions += file.deletions
-      }
+      if (item.kind !== "turn" || item.group.role !== "user") continue
+      // Extract first text part as the label.
+      const textPart = item.group.parts.find((p) => p.type === "text")
+      const label = textPart?.text?.slice(0, 120) ?? ""
       entries.push({
-        threadIndex,
-        turnId: group.userTurnId,
+        threadIndex: i,
+        turnId: item.group.id,
         ordinal: entries.length + 1,
-        label: group.userMessage,
-        additions,
-        deletions,
-        files: group.files,
-        hasChanges: group.files.length > 0,
+        label,
+        additions: 0,
+        deletions: 0,
+        files: [],
+        hasChanges: false,
       })
     }
-    return entries.length > 0 ? entries : EMPTY_NAV_ENTRIES
-  }, [showMessageNav, navExpanded, timelineTurns, threadItems])
+    return entries
+  }, [showMessageNav, threadItems])
 
   const hasRenderableContent = threadItems.length > 0 || Boolean(liveMessage)
 
@@ -933,15 +919,6 @@ export function MessageListView({
           hover. Logical `start-0` + `items-start` keep the anchor and the bullet
           on the same side, so the whole stack mirrors cleanly in RTL. */}
       <div className="pointer-events-none absolute start-0 top-4 z-20 flex max-w-[min(22rem,calc(100%-2rem))] flex-col items-start gap-2">
-        {showMessageNav && userMessageCount > 0 && (
-          <ConversationMessageNav
-            count={userMessageCount}
-            expanded={navExpanded}
-            onToggle={setNavExpanded}
-            entries={navEntries}
-            scrollApiRef={scrollApiRef}
-          />
-        )}
         <AgentPlanOverlay
           key={agentPlanOverlayKey}
           message={liveMessage ?? null}
@@ -956,6 +933,16 @@ export function MessageListView({
           overlayKey={subAgentOverlayKey}
         />
       </div>
+      {/* Dot navigation pinned to the inline-end edge (right in LTR). */}
+      {showMessageNav && userMessageCount > 0 && (
+        <div className="pointer-events-none absolute end-2 top-4 bottom-4 z-10 w-8">
+          <ConversationMessageNav
+            count={userMessageCount}
+            entries={navEntries}
+            scrollApiRef={scrollApiRef}
+          />
+        </div>
+      )}
     </div>
   )
 }

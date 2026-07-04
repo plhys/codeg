@@ -63,11 +63,12 @@
   --chart-3: oklch(0.546 0.245 262.881);
   --chart-4: oklch(0.488 0.243 264.376);
   --chart-5: oklch(0.424 0.199 265.638);
-  --sidebar: oklch(0.985 0 0);
+  /* Shell bar background (sidebar / title bar / status bar) — #ECECEE */
+  --sidebar: oklch(0.944 0.003 286);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.94 0 0);
+  --sidebar-accent: oklch(0.88 0.003 286);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
@@ -98,19 +99,20 @@
   --chart-3: oklch(0.546 0.245 262.881);
   --chart-4: oklch(0.488 0.243 264.376);
   --chart-5: oklch(0.424 0.199 265.638);
-  --sidebar: oklch(0.985 0 0);
+  /* Shell bar background (sidebar / title bar / status bar) — #ECECEE */
+  --sidebar: oklch(0.944 0.003 286);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.94 0 0);
+  --sidebar-accent: oklch(0.88 0.003 286);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
 }
 
 [data-theme="neutral"].dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
+  --background: oklch(0.205 0 0);
+  --foreground: oklch(0.82 0 0);
   --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
@@ -132,11 +134,12 @@
   --chart-3: oklch(0.546 0.245 262.881);
   --chart-4: oklch(0.488 0.243 264.376);
   --chart-5: oklch(0.424 0.199 265.638);
-  --sidebar: oklch(0.205 0 0);
+  /* Shell bar background (sidebar / title bar / status bar) — #2B2B2B */
+  --sidebar: oklch(0.29 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.87 0 0);
   --sidebar-primary-foreground: oklch(0.205 0 0);
-  --sidebar-accent: oklch(0.28 0 0);
+  --sidebar-accent: oklch(0.345 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
@@ -144,8 +147,8 @@
 
 /* 兜底 dark：data-theme 缺失时仍能跟随 .dark 类切换 */
 :root:not([data-theme]).dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
+  --background: oklch(0.205 0 0);
+  --foreground: oklch(0.82 0 0);
   --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
@@ -167,11 +170,12 @@
   --chart-3: oklch(0.546 0.245 262.881);
   --chart-4: oklch(0.488 0.243 264.376);
   --chart-5: oklch(0.424 0.199 265.638);
-  --sidebar: oklch(0.205 0 0);
+  /* Shell bar background (sidebar / title bar / status bar) — #2B2B2B */
+  --sidebar: oklch(0.29 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.87 0 0);
   --sidebar-primary-foreground: oklch(0.205 0 0);
-  --sidebar-accent: oklch(0.28 0 0);
+  --sidebar-accent: oklch(0.345 0 0);
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
@@ -927,8 +931,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]):not(.light) {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
+    --background: oklch(0.205 0 0);
+    --foreground: oklch(0.82 0 0);
     --card: oklch(0.205 0 0);
     --card-foreground: oklch(0.985 0 0);
     --popover: oklch(0.205 0 0);
@@ -945,11 +949,12 @@
     --border: oklch(1 0 0 / 10%);
     --input: oklch(1 0 0 / 15%);
     --ring: oklch(0.556 0 0);
-    --sidebar: oklch(0.205 0 0);
+    /* Shell bar background (sidebar / title bar / status bar) — #2B2B2B */
+    --sidebar: oklch(0.29 0 0);
     --sidebar-foreground: oklch(0.985 0 0);
     --sidebar-primary: oklch(0.488 0.243 264.376);
     --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.28 0 0);
+    --sidebar-accent: oklch(0.345 0 0);
     --sidebar-accent-foreground: oklch(0.985 0 0);
     --sidebar-border: oklch(1 0 0 / 10%);
     --sidebar-ring: oklch(0.556 0 0);
@@ -1523,6 +1528,12 @@
    intended: clicking a disabled control still focuses the editor. */
 .codeg-composer-chrome {
   cursor: text;
+}
+/* Lift the muted text inside the composer so folder names, reference badges and
+   other secondary labels stay legible against the sidebar-colored background
+   (#2B2B2B dark / #ECECEE light) without touching the global muted-foreground. */
+.dark .codeg-composer-chrome {
+  --muted-foreground: oklch(0.76 0 0);
 }
 .codeg-composer-chrome
   :is(button, a[href], [role="button"], [role="menuitem"], [role="combobox"]) {

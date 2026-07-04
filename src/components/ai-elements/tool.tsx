@@ -98,22 +98,22 @@ export const ToolHeader = ({
   return (
     <CollapsibleTrigger
       className={cn(
-        "flex w-full min-w-0 items-center justify-between gap-4 px-3 py-2",
+        "flex w-full min-w-0 items-center justify-between gap-4 px-2.5 py-1.5",
         className
       )}
       {...props}
     >
       <div className="flex min-w-0 items-center gap-2">
         <span className="shrink-0">
-          {icon ?? <WrenchIcon className="size-4 text-muted-foreground" />}
+          {icon ?? <WrenchIcon className="size-3.5 text-muted-foreground" />}
         </span>
-        <span className="min-w-0 flex-1 truncate whitespace-nowrap font-medium text-sm">
+        <span className="min-w-0 flex-1 truncate whitespace-nowrap font-medium text-xs">
           {title ?? derivedName}
         </span>
         {titleSuffix ? <span className="shrink-0">{titleSuffix}</span> : null}
         <span className="shrink-0">{getStatusBadge(state, statusLabel)}</span>
       </div>
-      <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+      <ChevronDownIcon className="size-3.5 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
     </CollapsibleTrigger>
   )
 }
@@ -132,7 +132,7 @@ export const ToolContent = ({
     )}
     {...props}
   >
-    <div className="space-y-4 p-4">{children}</div>
+    <div className="space-y-2 p-2.5">{children}</div>
   </CollapsibleContent>
 )
 
@@ -377,7 +377,7 @@ export const ToolOutput = ({
       renderAsMarkdown ?? (lang === "log" && looksLikeMarkdown(output))
     if (shouldRenderMd) {
       Output = (
-        <div className="prose prose-sm dark:prose-invert max-w-none p-3 text-sm [&_ul]:list-inside [&_ol]:list-inside">
+        <div className="prose prose-sm dark:prose-invert max-w-none p-2 text-xs [&_ul]:list-inside [&_ol]:list-inside">
           <MessageResponse>{output}</MessageResponse>
         </div>
       )

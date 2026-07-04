@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import {
-  ChevronsDownUp,
-  ChevronsUpDown,
-  Crosshair,
-  Funnel,
+  FolderGit2,
+  FolderOpenDot,
+  FolderPlus,
+  Rocket,
   Search,
   SquarePen,
   Zap,
@@ -13,6 +13,7 @@ import {
 } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useActiveFolder } from "@/contexts/active-folder-context"
+import { useAppWorkspace } from "@/contexts/app-workspace-context"
 import { useSidebarContext } from "@/contexts/sidebar-context"
 import { useTabContext } from "@/contexts/tab-context"
 import { useSearchDialog } from "@/contexts/search-dialog-context"
@@ -25,25 +26,23 @@ import {
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { CloneDialog } from "@/components/layout/clone-dialog"
+import { DirectoryBrowserDialog } from "@/components/shared/directory-browser-dialog"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useIsMac } from "@/hooks/use-is-mac"
 import { useShortcutSettings } from "@/hooks/use-shortcut-settings"
 import { formatShortcutLabel } from "@/lib/keyboard-shortcuts"
+import { openProjectBootWindow } from "@/lib/api"
+import { isDesktop, openFileDialog } from "@/lib/platform"
+import { getActiveRemoteConnectionId } from "@/lib/transport"
 import {
   loadShowCompleted,
   loadSortMode,
   loadSectionOrder,
-  saveShowCompleted,
-  saveSortMode,
-  saveSectionOrder,
   type SidebarSortMode,
   type SidebarSectionOrder,
 } from "@/lib/sidebar-view-mode-storage"
@@ -92,7 +91,7 @@ function SidebarNavButton({
       aria-current={active ? "page" : undefined}
       className={cn(
         "group flex h-8 w-full items-center gap-[0.4375rem] rounded-full pl-[0.4375rem] pr-1.5",
-        "text-[0.875rem] text-sidebar-foreground outline-none",
+        "text-[0.9375rem] text-sidebar-foreground outline-none",
         "transition-colors duration-150 hover:bg-sidebar-accent",
         "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
         active && "bg-sidebar-primary/8"
@@ -122,7 +121,8 @@ export function Sidebar() {
   const [sortMode, setSortMode] = useState<SidebarSortMode>("created")
   const [sectionOrder, setSectionOrder] =
     useState<SidebarSectionOrder>("folders-first")
-  const [allExpanded, setAllExpanded] = useState(true)
+  // Sidebar view toggle: "chats" = folderless conversations, "projects" = folders
+  const [sidebarView, setSidebarView] = useState<"chats" | "projects">("chats")
   const searchShortcutLabel = formatShortcutLabel(
     shortcuts.toggle_search,
     isMac
@@ -131,13 +131,6 @@ export function Sidebar() {
     shortcuts.new_conversation,
     isMac
   )
-  // General umbrella name for the funnel menu (show-completed + sort + section
-  // order). Kept generic so the accessible name / tooltip stays accurate as the
-  // menu gains options.
-  const viewOptionsLabel = t("viewOptions")
-  const toggleExpandLabel = allExpanded
-    ? t("collapseAllGroups")
-    : t("expandAllGroups")
 
   useEffect(() => {
     // Hydrate from localStorage after mount to keep SSR/CSR markup consistent.
@@ -146,34 +139,6 @@ export function Sidebar() {
     setSortMode(loadSortMode())
     setSectionOrder(loadSectionOrder())
   }, [])
-
-  const handleSetShowCompleted = useCallback((value: boolean) => {
-    setShowCompleted(value)
-    saveShowCompleted(value)
-  }, [])
-
-  const handleSetSortMode = useCallback((value: string) => {
-    const mode: SidebarSortMode = value === "updated" ? "updated" : "created"
-    setSortMode(mode)
-    saveSortMode(mode)
-  }, [])
-
-  const handleSetSectionOrder = useCallback((value: string) => {
-    const next: SidebarSectionOrder =
-      value === "chats-first" ? "chats-first" : "folders-first"
-    setSectionOrder(next)
-    saveSectionOrder(next)
-  }, [])
-
-  const handleToggleExpandAll = useCallback(() => {
-    if (allExpanded) {
-      listRef.current?.collapseAll()
-      setAllExpanded(false)
-    } else {
-      listRef.current?.expandAll()
-      setAllExpanded(true)
-    }
-  }, [allExpanded])
 
   const handleNewConversation = useCallback(() => {
     // Starting a conversation always returns to the conversation workspace (in
@@ -189,91 +154,41 @@ export function Sidebar() {
     openNewConversationTab(activeFolder.id, activeFolder.path)
   }, [activeFolder, openChatModeTab, openNewConversationTab, openConversations])
 
+  // Folder actions pinned to the sidebar's bottom-left corner, paired with the
+  // view-options buttons on the bottom-right. These mirror NewFolderDropdown's
+  // three entries but rendered as standalone icon buttons (no dropdown) so they
+  // sit flat in the bottom row. CloneDialog + DirectoryBrowserDialog are owned
+  // here; openProjectBootWindow opens a separate window.
+  const tFolder = useTranslations("Folder.folderNameDropdown")
+  const { openFolder } = useAppWorkspace()
+  const [cloneOpen, setCloneOpen] = useState(false)
+  const [browserOpen, setBrowserOpen] = useState(false)
+
+  const handleOpenFolder = useCallback(async () => {
+    // Same remote-vs-local logic as NewFolderDropdown / FolderTitleBar: the
+    // native Tauri dialog browses the LOCAL filesystem, so a remote workspace
+    // must fall through to the in-app DirectoryBrowserDialog.
+    if (isDesktop() && getActiveRemoteConnectionId() === null) {
+      try {
+        const result = await openFileDialog({
+          directory: true,
+          multiple: false,
+        })
+        if (!result) return
+        const selected = Array.isArray(result) ? result[0] : result
+        await openFolder(selected)
+      } catch (err) {
+        console.error("[Sidebar] failed to open folder:", err)
+      }
+    } else {
+      setBrowserOpen(true)
+    }
+  }, [openFolder])
+
   if (!isOpen) return null
 
   return (
     <aside className="@container/sidebar flex h-full min-h-0 flex-col overflow-hidden bg-sidebar text-sidebar-foreground select-none">
-      <div className="flex h-10 shrink-0 items-center justify-between gap-2 border-b border-border pl-4 pr-2">
-        <div className="flex min-w-0 items-center gap-4">
-          <h2 className="truncate text-[0.875rem] font-bold tracking-[-0.00625rem] text-sidebar-foreground">
-            {t("title")}
-          </h2>
-        </div>
-        <div className="flex items-center gap-0.5">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 shrink-0 text-muted-foreground"
-            onClick={() => listRef.current?.scrollToActive()}
-            title={t("locateActiveConversation")}
-            aria-label={t("locateActiveConversation")}
-          >
-            <Crosshair aria-hidden="true" className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 shrink-0 text-muted-foreground"
-            onClick={handleToggleExpandAll}
-            title={toggleExpandLabel}
-            aria-label={toggleExpandLabel}
-          >
-            {allExpanded ? (
-              <ChevronsDownUp aria-hidden="true" className="h-3.5 w-3.5" />
-            ) : (
-              <ChevronsUpDown aria-hidden="true" className="h-3.5 w-3.5" />
-            )}
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 shrink-0 text-muted-foreground"
-                title={viewOptionsLabel}
-                aria-label={viewOptionsLabel}
-              >
-                <Funnel aria-hidden="true" className="h-3.5 w-3.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuCheckboxItem
-                checked={showCompleted}
-                onCheckedChange={handleSetShowCompleted}
-              >
-                {t("showCompleted")}
-              </DropdownMenuCheckboxItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel>{t("sortBy")}</DropdownMenuLabel>
-              <DropdownMenuRadioGroup
-                value={sortMode}
-                onValueChange={handleSetSortMode}
-              >
-                <DropdownMenuRadioItem value="created">
-                  {t("sortByCreatedAt")}
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="updated">
-                  {t("sortByUpdatedAt")}
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel>{t("sectionOrder")}</DropdownMenuLabel>
-              <DropdownMenuRadioGroup
-                value={sectionOrder}
-                onValueChange={handleSetSectionOrder}
-              >
-                <DropdownMenuRadioItem value="folders-first">
-                  {t("sectionOrderFoldersFirst")}
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="chats-first">
-                  {t("sectionOrderChatsFirst")}
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-
       {/* Fixed actions above the scrollable list. `shrink-0` keeps them pinned —
           they never scroll with the conversation list. Rows are `rounded-full`
           like the conversation pills, and the icon/text geometry matches the
@@ -320,9 +235,72 @@ export function Sidebar() {
         />
       </div>
 
+      {/* Subtle recessed divider between nav buttons and the view toggle. */}
+      <div className="mx-3 my-2.5 border-t border-sidebar-border/50" />
+
+      {/* View toggle + folder actions row.
+          Left: "对话/项目" pill toggle (120px total). Right: folder-action
+          dropdown (open folder / clone / project launcher). */}
+      <div className="flex shrink-0 items-center gap-1 px-2 pt-1">
+        <div className="flex rounded-full bg-muted/50" style={{ width: 120 }}>
+          <button
+            type="button"
+            onClick={() => setSidebarView("chats")}
+            className={cn(
+              "flex-1 rounded-full py-0.5 text-center text-[0.6875rem] font-medium leading-relaxed transition-colors",
+              sidebarView === "chats"
+                ? "bg-sidebar-primary/20 text-sidebar-foreground"
+                : "text-muted-foreground/70 hover:bg-sidebar-accent"
+            )}
+          >
+            {t("viewChats")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setSidebarView("projects")}
+            className={cn(
+              "flex-1 rounded-full py-0.5 text-center text-[0.6875rem] font-medium leading-relaxed transition-colors",
+              sidebarView === "projects"
+                ? "bg-sidebar-primary/20 text-sidebar-foreground"
+                : "text-muted-foreground/70 hover:bg-sidebar-accent"
+            )}
+          >
+            {t("viewProjects")}
+          </button>
+        </div>
+        <div className="ml-auto">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 shrink-0 text-muted-foreground hover:text-sidebar-foreground"
+                title={tFolder("openFolder")}
+              >
+                <FolderPlus aria-hidden="true" className="h-3.5 w-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="min-w-40">
+              <DropdownMenuItem onSelect={handleOpenFolder}>
+                <FolderOpenDot className="h-3.5 w-3.5" />
+                {tFolder("openFolder")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setCloneOpen(true)}>
+                <FolderGit2 className="h-3.5 w-3.5" />
+                {tFolder("cloneRepository")}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => openProjectBootWindow()}>
+                <Rocket className="h-3.5 w-3.5" />
+                {tFolder("projectBoot")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
       {/* On mobile, clicking a conversation card auto-closes the Sheet */}
       <div
-        className="flex flex-col flex-1 min-h-0 overflow-hidden pt-1.5"
+        className="flex flex-col flex-1 min-h-0 overflow-hidden pt-1"
         onClick={
           isMobile
             ? (e) => {
@@ -339,8 +317,19 @@ export function Sidebar() {
           showCompleted={showCompleted}
           sortMode={sortMode}
           sectionOrder={sectionOrder}
+          visibleSections={sidebarView === "chats" ? "chats" : "projects"}
         />
       </div>
+      <CloneDialog open={cloneOpen} onOpenChange={setCloneOpen} />
+      <DirectoryBrowserDialog
+        open={browserOpen}
+        onOpenChange={setBrowserOpen}
+        onSelect={(path) => {
+          openFolder(path).catch((err) => {
+            console.error("[Sidebar] failed to open folder:", err)
+          })
+        }}
+      />
     </aside>
   )
 }

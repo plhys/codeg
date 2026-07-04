@@ -53,7 +53,6 @@ import {
 } from "@/lib/api"
 import {
   flushRetryDelayMs,
-  forkSendBlockedByQueue,
   isConnectionReady,
   shouldQueueDirectSend,
   shouldRejectDuplicateCreate,
@@ -1018,74 +1017,32 @@ const ConversationTabView = memo(function ConversationTabView({
     handleSendRef.current = handleSend
   }, [handleSend])
 
-  const handleForkSend = useCallback(
-    // Fire-and-forget: the input clears the draft synchronously on click (like a
-    // normal send), so there is no in-flight editable window. If the fork can't
-    // run right now — disconnected, or the queue is non-empty (a fork is an
-    // immediate session side effect and must not jump ahead of queued items) —
-    // the draft is NOT lost: it is queued as a normal send (it flushes after any
-    // queued items). The same on a fork failure.
-    async (draft: PromptDraft, selectedModeIdArg?: string | null) => {
+  const handleForkFromMessage = useCallback(async () => {
       const connectionId = conn.connectionId
-      if (
-        !connectionId ||
-        connStatus !== "connected" ||
-        // Read the queue length SYNCHRONOUSLY so a draft re-queued by a same-
-        // tick bounce is seen even before React commits. The UI also hides the
-        // fork affordance while the queue is non-empty; this is the guard.
-        forkSendBlockedByQueue(mqGetQueueLength())
-      ) {
-        mqEnqueue(draft, selectedModeIdArg ?? null)
-        return
-      }
+      if (!connectionId || connStatus !== "connected") return
       try {
-        // Backend performs all DB writes in one transaction-shaped call:
-        // - current row: external_id=S2, title="[Fork] ..."
-        // - sibling row: created with external_id=S1, status=pending_review
         const { forkedSessionId } = await acpFork(connectionId)
-        // Update runtime session id to S2 (frontend in-memory state only)
         sessionIdRef.current = forkedSessionId
         setExternalId(effectiveConversationId, forkedSessionId)
-
         refreshConversations()
-        // Send the message on the forked session (S2)
-        handleSend(draft, selectedModeIdArg)
+        toast.success(t("forkSessionSuccess"))
       } catch (err) {
-        // Busy (a turn is in flight, e.g. another co-controlling client started
-        // one): NOT a fork failure — silently re-queue, like a normal bounce.
-        // It sends after the current turn.
-        if (err instanceof TurnBusyError) {
-          mqEnqueue(draft, selectedModeIdArg ?? null)
-          return
+        if (!(err instanceof TurnBusyError)) {
+          toast.error(
+            t("forkSessionFailed", {
+              error: err instanceof Error ? err.message : String(err),
+            })
+          )
         }
-        // Real fork failure: surface it. EXPLICIT product decision — fork-send
-        // is best-effort, so the draft is never lost; it is re-queued and sent
-        // on the current (un-forked) session.
-        toast.error(
-          t("forkSessionFailed", {
-            error:
-              err instanceof Error
-                ? err.message
-                : typeof err === "object" && err !== null
-                  ? JSON.stringify(err)
-                  : String(err),
-          })
-        )
-        mqEnqueue(draft, selectedModeIdArg ?? null)
       }
-    },
-    [
+    }, [
       conn.connectionId,
       connStatus,
-      mqGetQueueLength,
-      mqEnqueue,
       effectiveConversationId,
-      handleSend,
       refreshConversations,
       setExternalId,
       t,
-    ]
-  )
+    ])
 
   const handleOpenAgentsSettings = useCallback(() => {
     openSettingsWindow("agents", { agentType: selectedAgent }).catch((err) => {
@@ -1231,6 +1188,16 @@ const ConversationTabView = memo(function ConversationTabView({
     [mqStartEditing]
   )
 
+  const handleJumpQueue = useCallback(
+    (id: string) => {
+      const item = msgQueue.find((m) => m.id === id)
+      if (!item) return
+      mqRemove(id)
+      mqRequeueFront(item.draft, item.modeId)
+    },
+    [msgQueue, mqRemove, mqRequeueFront]
+  )
+
   const handleQueueCancelEdit = useCallback(() => {
     mqCancelEditing()
   }, [mqCancelEditing])
@@ -1301,6 +1268,7 @@ const ConversationTabView = memo(function ConversationTabView({
       onNewSession={
         canShowDetailErrorActions ? handleOpenNewSession : undefined
       }
+      onFork={handleForkFromMessage}
     />
   )
 
@@ -1373,20 +1341,13 @@ const ConversationTabView = memo(function ConversationTabView({
       onQueueReorder={mqReorder}
       onQueueEdit={handleQueueEdit}
       onQueueDelete={mqRemove}
+      onJumpQueue={handleJumpQueue}
       editingItemId={mqEditingItemId}
       editingDraftText={editingQueueDraftText}
       editingDraftBlocks={editingQueueDraftBlocks}
       isEditingQueueItem={mqEditingItemId != null}
       onSaveQueueEdit={handleSaveQueueEdit}
       onCancelQueueEdit={handleQueueCancelEdit}
-      onForkSend={
-        connStatus === "connected" &&
-        hasPersistedConversation &&
-        conn.supportsFork &&
-        !forkSendBlockedByQueue(msgQueue.length)
-          ? handleForkSend
-          : undefined
-      }
     >
       {isWelcomeMode ? (
         <div className="relative isolate flex h-full min-h-0 flex-col overflow-x-hidden overflow-y-auto">
