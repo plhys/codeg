@@ -1015,7 +1015,7 @@
   }
   ::-webkit-scrollbar {
     width: 4px !important;
-    height: 4px !important;
+    height: 2px !important;
   }
   ::-webkit-scrollbar-track {
     background: transparent !important;
@@ -1050,11 +1050,11 @@
   border-radius: 2px;
 }
 
-/* OverlayScrollbars custom theme — 6px track, grows to 8px on hover.
+/* OverlayScrollbars custom theme — hairline track, grows slightly on hover.
    Use compound selector to beat the base `.os-scrollbar` defaults
    (--os-size:0, --os-handle-bg:none) regardless of CSS load order. */
 .os-scrollbar.os-theme-veryagent {
-  --os-size: 6px;
+  --os-size: 2px;
   --os-handle-bg: var(--border);
   --os-handle-bg-hover: var(--muted-foreground);
   --os-handle-bg-active: var(--muted-foreground);
@@ -1066,7 +1066,7 @@
 }
 
 .os-scrollbar.os-theme-veryagent:hover {
-  --os-size: 8px;
+  --os-size: 4px;
 }
 
 /* Streamdown code blocks: dark mode via shiki dual-theme CSS variables */
@@ -1210,6 +1210,29 @@
   .qa-marquee-track > [data-qa-clone] {
     display: none;
   }
+}
+
+/* Thin, refined scroller for the marquee row. Visible only under reduced
+   motion (where the viewport becomes a real horizontal scroller), but styled
+   unconditionally so it stays refined if it ever shows. 1px hairline track
+   with a faint rounded thumb. Specificity + !important beat both the global
+   `::-webkit-scrollbar` and `.scrollbar-thin` rules. */
+.qa-marquee-viewport {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.qa-marquee-viewport::-webkit-scrollbar {
+  height: 1px !important;
+}
+.qa-marquee-viewport::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+.qa-marquee-viewport::-webkit-scrollbar-thumb {
+  background: var(--border) !important;
+  border-radius: 999px !important;
+}
+.qa-marquee-viewport::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground) !important;
 }
 
 .select-none {

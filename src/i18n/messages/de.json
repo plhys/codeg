@@ -2166,7 +2166,10 @@
             "title": "Skill „{skill}“ ist für {agent} noch nicht aktiviert",
             "description": "Aktiviere ihn in den Einstellungen, um ihn hier zu nutzen.",
             "action": "Aktivieren",
-            "hint": "Skill nicht aktiviert"
+            "hint": "Skill nicht aktiviert",
+            "linked": "{skill} aktiviert",
+            "preparing": "Abhängigkeiten werden vorbereitet …",
+            "autoInstallFailed": "Abhängigkeiten konnten nicht automatisch installiert werden. Öffne die Einstellungen, um es manuell zu beheben."
           }
         }
       },

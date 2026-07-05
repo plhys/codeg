@@ -2166,7 +2166,10 @@
             "title": "La habilidad «{skill}» aún no está activada para {agent}",
             "description": "Actívala en Ajustes para usarla aquí.",
             "action": "Activar",
-            "hint": "Habilidad no activada"
+            "hint": "Habilidad no activada",
+            "linked": "{skill} activada",
+            "preparing": "Preparando dependencias…",
+            "autoInstallFailed": "No se pudieron instalar las dependencias automáticamente. Abre Ajustes para resolverlo manualmente."
           }
         }
       },

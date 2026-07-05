@@ -2170,7 +2170,9 @@
             "description": "Enable it in Settings to use it here.",
             "action": "Enable",
             "hint": "Skill not enabled",
-            "linked": "Enabled {skill}"
+            "linked": "Enabled {skill}",
+            "preparing": "Preparing dependencies…",
+            "autoInstallFailed": "Failed to install dependencies automatically. Open Settings to resolve manually."
           }
         }
       },

@@ -241,101 +241,100 @@ impl TerminalManager {
         opts: SpawnOptions,
         emitter: EventEmitter,
     ) -> Result<String, TerminalError> {
-        // Reject duplicate IDs to prevent orphaning an existing PTY process.
-        {
-            let terminals = self.terminals.lock().unwrap();
-            if terminals.contains_key(&opts.terminal_id) {
-                return Err(TerminalError::SpawnFailed(format!(
-                    "terminal id '{}' already exists",
-                    opts.terminal_id
-                )));
-            }
-        }
-
-        let pty_system = native_pty_system();
-
-        let pair = pty_system
-            .openpty(PtySize {
-                rows: 24,
-                cols: 80,
-                pixel_width: 0,
-                pixel_height: 0,
-            })
-            .map_err(|e| TerminalError::SpawnFailed(e.to_string()))?;
-
-        let shell = opts
-            .shell
-            .as_deref()
-            .map(str::trim)
-            .filter(|value| !value.is_empty())
-            .map(ToOwned::to_owned)
-            .unwrap_or_else(resolve_shell);
-        let mut cmd = CommandBuilder::new(&shell);
-        configure_shell_command(&mut cmd, &shell, opts.initial_command.as_deref());
-        cmd.cwd(&opts.working_dir);
-
-        // Inject extra environment variables (e.g. git credential helper config)
-        if let Some(env) = &opts.extra_env {
-            for (key, value) in env {
-                cmd.env(key, value);
-            }
-        }
-
-        let child = pair
-            .slave
-            .spawn_command(cmd)
-            .map_err(|e| TerminalError::SpawnFailed(e.to_string()))?;
-
-        drop(pair.slave);
-
-        let writer = pair
-            .master
-            .take_writer()
-            .map_err(|e| TerminalError::SpawnFailed(e.to_string()))?;
-
-        let reader = pair
-            .master
-            .try_clone_reader()
-            .map_err(|e| TerminalError::SpawnFailed(e.to_string()))?;
-
         let terminal_id = opts.terminal_id;
         // Boundary-, length-, and NUL-safe prefix for the PTY thread names; see
         // `thread_name_prefix`. `terminal_id` is caller-supplied.
         let short_id = thread_name_prefix(&terminal_id);
 
-        let (write_tx, write_rx) = mpsc::channel::<Vec<u8>>();
+        // Check-and-insert atomically under one lock to prevent a concurrent
+        // spawn_with_id with the same terminal_id from passing the duplicate
+        // check and orphaning a PTY process.
+        {
+            let mut terminals = self.terminals.lock().unwrap();
+            if terminals.contains_key(&terminal_id) {
+                return Err(TerminalError::SpawnFailed(format!(
+                    "terminal id '{}' already exists",
+                    terminal_id
+                )));
+            }
 
-        let instance = TerminalInstance {
-            write_tx,
-            master: pair.master,
-            _child: child,
-            title: "Terminal".to_string(),
-            owner_window_label: opts.owner_window_label,
-            temp_files: opts.temp_files,
-        };
+            let pty_system = native_pty_system();
 
-        self.terminals
-            .lock()
-            .unwrap()
-            .insert(terminal_id.clone(), instance);
+            let pair = pty_system
+                .openpty(PtySize {
+                    rows: 24,
+                    cols: 80,
+                    pixel_width: 0,
+                    pixel_height: 0,
+                })
+                .map_err(|e| TerminalError::SpawnFailed(e.to_string()))?;
 
-        // Named writer thread
-        std::thread::Builder::new()
-            .name(format!("pty-writer-{short_id}"))
-            .spawn(move || {
-                write_loop(writer, write_rx);
-            })
-            .map_err(|e| TerminalError::SpawnFailed(e.to_string()))?;
+            let shell = opts
+                .shell
+                .as_deref()
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .map(ToOwned::to_owned)
+                .unwrap_or_else(resolve_shell);
+            let mut cmd = CommandBuilder::new(&shell);
+            configure_shell_command(&mut cmd, &shell, opts.initial_command.as_deref());
+            cmd.cwd(&opts.working_dir);
 
-        // Named reader thread — emits per-terminal events
-        let id_for_reader = terminal_id.clone();
-        let terminals_ref = self.terminals.clone();
-        std::thread::Builder::new()
-            .name(format!("pty-reader-{short_id}"))
-            .spawn(move || {
-                read_loop(reader, id_for_reader, &emitter, &terminals_ref);
-            })
-            .map_err(|e| TerminalError::SpawnFailed(e.to_string()))?;
+            // Inject extra environment variables (e.g. git credential helper config)
+            if let Some(env) = &opts.extra_env {
+                for (key, value) in env {
+                    cmd.env(key, value);
+                }
+            }
+
+            let child = pair
+                .slave
+                .spawn_command(cmd)
+                .map_err(|e| TerminalError::SpawnFailed(e.to_string()))?;
+
+            drop(pair.slave);
+
+            let writer = pair
+                .master
+                .take_writer()
+                .map_err(|e| TerminalError::SpawnFailed(e.to_string()))?;
+
+            let reader = pair
+                .master
+                .try_clone_reader()
+                .map_err(|e| TerminalError::SpawnFailed(e.to_string()))?;
+
+            let (write_tx, write_rx) = mpsc::channel::<Vec<u8>>();
+
+            let instance = TerminalInstance {
+                write_tx,
+                master: pair.master,
+                _child: child,
+                title: "Terminal".to_string(),
+                owner_window_label: opts.owner_window_label,
+                temp_files: opts.temp_files,
+            };
+
+            terminals.insert(terminal_id.clone(), instance);
+
+            // Named writer thread
+            std::thread::Builder::new()
+                .name(format!("pty-writer-{short_id}"))
+                .spawn(move || {
+                    write_loop(writer, write_rx);
+                })
+                .map_err(|e| TerminalError::SpawnFailed(e.to_string()))?;
+
+            // Named reader thread — emits per-terminal events
+            let id_for_reader = terminal_id.clone();
+            let terminals_ref = self.terminals.clone();
+            std::thread::Builder::new()
+                .name(format!("pty-reader-{short_id}"))
+                .spawn(move || {
+                    read_loop(reader, id_for_reader, &emitter, &terminals_ref);
+                })
+                .map_err(|e| TerminalError::SpawnFailed(e.to_string()))?;
+        }
 
         Ok(terminal_id)
     }

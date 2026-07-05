@@ -79,7 +79,14 @@ fn write_tokens(tokens: &std::collections::HashMap<String, String>) -> Result<()
     }
     let json = serde_json::to_string_pretty(tokens)
         .map_err(|e| format!("failed to serialize tokens: {e}"))?;
-    std::fs::write(&path, json).map_err(|e| format!("failed to write token store: {e}"))
+    std::fs::write(&path, json).map_err(|e| format!("failed to write token store: {e}"))?;
+    // Restrict to owner-only read/write on Unix.
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let _ = std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600));
+    }
+    Ok(())
 }
 
 #[cfg(not(feature = "tauri-runtime"))]

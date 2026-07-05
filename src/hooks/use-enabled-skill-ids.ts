@@ -84,6 +84,25 @@ function refreshSnapshotOnFocus(): void {
   loadSnapshot()
 }
 
+/**
+ * Force a fresh status snapshot from the backend and notify all subscribers.
+ *
+ * Used by the welcome-page quick-action cards after they auto-link a skill:
+ * linking changes the (skill, agent) state, but `useEnabledSkillIds` only
+ * refetches on window focus. Calling this right after a link resolves makes the
+ * lock clear immediately instead of waiting for the next focus.
+ *
+ * Returns the promise from `loadSnapshot` so callers can await the refresh
+ * before acting on the new state (e.g. before injecting the skill badge).
+ */
+export async function refreshEnabledSkillsSnapshot(): Promise<
+  ExpertInstallStatus[] | null
+> {
+  generation += 1
+  inflight = null
+  return loadSnapshot()
+}
+
 function acquireFocusRefresh(): void {
   if (typeof window === "undefined") return
   focusRefcount += 1

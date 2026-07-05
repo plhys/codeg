@@ -2166,7 +2166,10 @@
             "title": "La compétence « {skill} » n’est pas encore activée pour {agent}",
             "description": "Activez-la dans les Paramètres pour l’utiliser ici.",
             "action": "Activer",
-            "hint": "Compétence non activée"
+            "hint": "Compétence non activée",
+            "linked": "{skill} activée",
+            "preparing": "Préparation des dépendances…",
+            "autoInstallFailed": "Échec de l’installation automatique des dépendances. Ouvrez les Paramètres pour résoudre manuellement."
           }
         }
       },

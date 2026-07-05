@@ -55,3 +55,6 @@ src-tauri/binaries/
 
 # pnpm local store (pnpm 11+)
 .pnpm-store/
+
+# Tauri signing password (set via CI secrets, never commit)
+.tauri-signing-pw

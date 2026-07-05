@@ -1358,9 +1358,9 @@ const ConversationTabView = memo(function ConversationTabView({
       onSaveQueueEdit={handleSaveQueueEdit}
       onCancelQueueEdit={handleQueueCancelEdit}
     >
-      {isWelcomeMode ? (
-        <div className="flex h-full min-h-0 flex-col items-center overflow-x-hidden overflow-y-auto px-4">
-          {/* Logo — centered, slightly above middle. */}
+	      {isWelcomeMode ? (
+	        <div className="flex h-full min-h-0 flex-col items-center overflow-x-hidden overflow-y-auto px-4">
+	          {/* Logo — centered, slightly above middle. */}
           <div className="flex-[0.6]" />
           <img
             src="/welcome-logo.png"
@@ -1378,21 +1378,6 @@ const ConversationTabView = memo(function ConversationTabView({
 
           {/* Chat input. */}
           <div className="mx-auto flex w-full max-w-3xl shrink-0 flex-col gap-2 pb-4">
-            <div className="flex justify-center">
-              <AgentSelector
-                defaultAgentType={selectedAgent}
-                onSelect={handleAgentSelect}
-                onFallback={handleAgentFallback}
-                onAgentsLoaded={(agents) => {
-                  setAgentsLoaded(true)
-                  setUsableAgentCount(
-                    agents.filter((agent) => agent.enabled && agent.available).length
-                  )
-                }}
-                onOpenAgentsSettings={handleOpenAgentsSettings}
-                disabled={isConnecting || dbConversationId != null}
-              />
-            </div>
             {autoConnectError || agentConnectError ? (
               <button
                 type="button"
@@ -1436,6 +1421,22 @@ const ConversationTabView = memo(function ConversationTabView({
               flush
               tall
             />
+            {/* Agent selector pinned below the input box. */}
+            <div className="flex justify-center">
+              <AgentSelector
+                defaultAgentType={selectedAgent}
+                onSelect={handleAgentSelect}
+                onFallback={handleAgentFallback}
+                onAgentsLoaded={(agents) => {
+                  setAgentsLoaded(true)
+                  setUsableAgentCount(
+                    agents.filter((agent) => agent.enabled && agent.available).length
+                  )
+                }}
+                onOpenAgentsSettings={handleOpenAgentsSettings}
+                disabled={isConnecting || dbConversationId != null}
+              />
+            </div>
           </div>
           {/* QuickActions pinned below the input box. */}
           <div className="mx-auto w-full max-w-3xl shrink-0 pb-4">
@@ -1444,7 +1445,7 @@ const ConversationTabView = memo(function ConversationTabView({
               agentType={selectedAgent}
             />
           </div>
-        </div>
+	        </div>
       ) : showDraftHeader ? (
         <div className="flex h-full min-h-0 flex-col">
           <div className="px-4 pt-3 pb-2">

@@ -38,6 +38,21 @@ const CENTRAL_DIR_NAME: &str = ".veryagent";
 const CENTRAL_SKILLS_SUBDIR: &str = "skills";
 const MANIFEST_FILE: &str = ".manifest.json";
 const EXPERTS_TOML: &str = "experts.toml";
+// The product was renamed codeg → veryagent. The central skill store moved from
+// `~/.codeg/skills` to `~/.veryagent/skills`, but agent links created before the
+// rename still point at the old path. We must recognise those legacy links as
+// our own (so the matrix shows them checked and re-link can replace them)
+// instead of misclassifying them as a foreign `LinkedElsewhere`.
+const LEGACY_CENTRAL_DIR_NAME: &str = ".codeg";
+
+/// The legacy central store path (`~/.codeg/skills`), for recognising
+/// pre-rename agent links and falling back when a skill hasn't been migrated
+/// to the new central store yet.
+fn legacy_central_experts_dir() -> PathBuf {
+    home_dir_or_default()
+        .join(LEGACY_CENTRAL_DIR_NAME)
+        .join(CENTRAL_SKILLS_SUBDIR)
+}
 
 // ─── Error type ─────────────────────────────────────────────────────────
 
@@ -99,6 +114,11 @@ pub struct ExpertListItem {
 #[serde(rename_all = "snake_case")]
 pub enum ExpertLinkState {
     NotLinked,
+    // The product was renamed codeg → veryagent; the frontend, i18n keys, and
+    // tests all expect `linked_to_veryagent`. Serialize under that name so the
+    // matrix checkbox and the welcome-page lock state agree with reality.
+    // (Backend match arms use the variant name, so this rename is wire-only.)
+    #[serde(rename = "linked_to_veryagent")]
     LinkedToCodeg,
     LinkedElsewhere,
     BlockedByRealDirectory,
@@ -518,7 +538,50 @@ pub(crate) fn classify_link(link_path: &Path, expected_target: &Path) -> ExpertL
     match (resolved_link, resolved_expected) {
         (None, _) => ExpertLinkState::Broken,
         (Some(l), Some(e)) if paths_equivalent(&l, &e) => ExpertLinkState::LinkedToCodeg,
-        _ => ExpertLinkState::LinkedElsewhere,
+        (Some(l), _) => {
+            // Product rename fallback: a link created before codeg → veryagent
+            // points at the legacy central store (`~/.codeg/skills/<id>`).
+            // That's still *our* link, not a foreign one — recognise it so the
+            // matrix shows it checked and re-link/unlink can replace it.
+            if points_at_legacy_central(&l, expected_target) {
+                ExpertLinkState::LinkedToCodeg
+            } else {
+                ExpertLinkState::LinkedElsewhere
+            }
+        }
+    }
+}
+
+/// True if `resolved_link` is the pre-rename central-store counterpart of
+/// `expected_target` — i.e. the same path but under `~/.codeg/skills` instead
+/// of `~/.veryagent/skills`. Used to keep legacy links from being misclassified
+/// as foreign (`LinkedElsewhere`) after the product rename.
+///
+/// Derives the legacy path from `expected_target` by swapping the central dir
+/// component, so it doesn't depend on the real home dir (testable with any
+/// tmp path that mirrors the layout).
+fn points_at_legacy_central(resolved_link: &Path, expected_target: &Path) -> bool {
+    // Walk the expected target's components and rebuild the same path with the
+    // `.veryagent` directory component replaced by `.codeg`. If the expected
+    // path doesn't contain `.veryagent` (custom layout), there's no legacy
+    // counterpart to check.
+    let mut found_central = false;
+    let mut legacy_path = PathBuf::new();
+    for comp in expected_target.components() {
+        let os = comp.as_os_str();
+        if os == std::ffi::OsStr::new(CENTRAL_DIR_NAME) {
+            legacy_path.push(LEGACY_CENTRAL_DIR_NAME);
+            found_central = true;
+        } else {
+            legacy_path.push(os);
+        }
+    }
+    if !found_central {
+        return false;
+    }
+    match resolve_real_path(&legacy_path) {
+        Some(legacy_resolved) => paths_equivalent(resolved_link, &legacy_resolved),
+        None => false,
     }
 }
 
@@ -804,24 +867,43 @@ fn link_one_locked(
     let _ = find_metadata(&expert_id)?;
     let central = expert_central_path(&expert_id);
     if !central.exists() {
+        // The skill may not have been migrated from the legacy central store
+        // (`.codeg/skills/<id>`). If it exists there, use it as the link
+        // target so re-enabling a previously-linked skill doesn't fail.
+        let legacy = legacy_central_experts_dir().join(&expert_id);
+        if legacy.exists() {
+            // Use the legacy central path; the link will point at the old
+            // store until the next central install / migration.
+            return link_one_locked_inner(&expert_id, agent_type, &legacy);
+        }
         return Err(ExpertsError::CentralUnavailable(format!(
             "expert '{expert_id}' is not installed in central store"
         )));
     }
 
-    let link_path = agent_link_path(agent_type, &expert_id)?;
+    link_one_locked_inner(&expert_id, agent_type, &central)
+}
+
+/// Core linking logic (extracted so the legacy fallback can reuse it with a
+/// different `central` path).
+fn link_one_locked_inner(
+    expert_id: &str,
+    agent_type: AgentType,
+    central: &Path,
+) -> Result<ExpertInstallStatus, ExpertsError> {
+    let link_path = agent_link_path(agent_type, expert_id)?;
     if let Some(parent) = link_path.parent() {
         fs::create_dir_all(parent)?;
     }
 
     let mut copy_mode = false;
-    match create_link_raw(&central, &link_path) {
+    match create_link_raw(central, &link_path) {
         Ok(is_copy) => {
             copy_mode = is_copy;
         }
         Err(err) if err.kind() == io::ErrorKind::AlreadyExists => {
             // Already exists — figure out what kind.
-            match classify_link(&link_path, &central) {
+            match classify_link(&link_path, central) {
                 ExpertLinkState::LinkedToCodeg => {
                     // Idempotent success.
                 }
@@ -841,7 +923,7 @@ fn link_one_locked(
                 }
                 ExpertLinkState::NotLinked => {
                     // Shouldn't happen after AlreadyExists, but retry once.
-                    create_link_raw(&central, &link_path)
+                    create_link_raw(central, &link_path)
                         .map_err(|e| ExpertsError::Io(format!("retry link failed: {e}")))?;
                 }
             }
@@ -849,10 +931,10 @@ fn link_one_locked(
         Err(err) => return Err(ExpertsError::Io(err.to_string())),
     }
 
-    let state = classify_link(&link_path, &central);
+    let state = classify_link(&link_path, central);
     let target_path = read_link_target(&link_path).map(|p| p.to_string_lossy().to_string());
     Ok(ExpertInstallStatus {
-        expert_id: expert_id.clone(),
+        expert_id: expert_id.to_string(),
         agent_type,
         state,
         link_path: link_path.to_string_lossy().to_string(),
@@ -1037,6 +1119,57 @@ pub async fn experts_open_central_dir() -> Result<String, ExpertsError> {
 mod tests {
     use super::*;
     use tokio::time::{timeout, Duration};
+
+    // The frontend (matrix checkbox, welcome-page lock) checks for the exact
+    // string `linked_to_veryagent`. The variant was named `LinkedToCodeg` from
+    // the old product name, so it must serialize as `linked_to_veryagent` (via
+    // the per-variant #[serde(rename)]), not the default `linked_to_codeg`.
+    #[test]
+    fn expert_link_state_serializes_linked_as_veryagent() {
+        let json = serde_json::to_string(&ExpertLinkState::LinkedToCodeg).unwrap();
+        assert_eq!(
+            json, "\"linked_to_veryagent\"",
+            "frontend expects `linked_to_veryagent`, got {json}"
+        );
+    }
+
+    // A link created before the codeg → veryagent rename points at
+    // `~/.codeg/skills/<id>` while the current central store is
+    // `~/.veryagent/skills/<id>`. classify_link must recognise such a legacy
+    // link as ours (LinkedToCodeg), not as a foreign LinkedElsewhere —
+    // otherwise the matrix shows it unchecked and re-linking is blocked.
+    #[test]
+    fn classify_link_recognises_legacy_codeg_link_as_ours() {
+        let tmp = tempfile::tempdir().expect("tempdir");
+        let root = tmp.path();
+
+        // Simulate the two central stores and an agent link pointing at the
+        // legacy one. We can't easily override home_dir, so call classify_link
+        // with explicit paths that mirror the real layout.
+        let new_central = root.join(".veryagent/skills/brainstorming");
+        let legacy_central = root.join(".codeg/skills/brainstorming");
+        let agent_link = root.join(".agents/skills/brainstorming");
+        for d in [&new_central, &legacy_central] {
+            std::fs::create_dir_all(d).expect("mkdir central");
+        }
+        // Point the agent link at the LEGACY central (pre-rename state). Use
+        // the project's own cross-platform linker so this works on Windows
+        // without developer-mode symlink privileges (falls back to junction /
+        // copy as the real code path does).
+        if let Some(parent) = agent_link.parent() {
+            std::fs::create_dir_all(parent).expect("mkdir agent link parent");
+        }
+        create_link_raw(&legacy_central, &agent_link).expect("create legacy link");
+
+        // expected_target is the NEW central; the link points at the LEGACY
+        // central. Without the legacy fallback this would be LinkedElsewhere.
+        let state = classify_link(&agent_link, &new_central);
+        assert_eq!(
+            state,
+            ExpertLinkState::LinkedToCodeg,
+            "legacy .codeg link should be recognised as ours, got {state:?}"
+        );
+    }
 
     // These tests deliberately use ids that are well-formed but absent from the
     // bundle and unlikely to exist as real links, so they never touch or mutate

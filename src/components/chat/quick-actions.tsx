@@ -13,9 +13,20 @@ import { toast } from "sonner"
 import { Lock, type LucideIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { openSettingsWindow, type SettingsSection } from "@/lib/api"
+import {
+  openSettingsWindow,
+  expertsLinkToAgent,
+  officecliDetect,
+  officecliInstall,
+  officecliSyncSkills,
+  officecliSkillLinkToAgent,
+  type SettingsSection,
+} from "@/lib/api"
 import { useBuiltInExperts } from "@/hooks/use-built-in-experts"
-import { useEnabledSkillIds } from "@/hooks/use-enabled-skill-ids"
+import {
+  useEnabledSkillIds,
+  refreshEnabledSkillsSnapshot,
+} from "@/hooks/use-enabled-skill-ids"
 import { getExpertIcon, pickLocalized } from "@/lib/expert-presentation"
 import {
   OFFICE_ACTIONS,
@@ -168,19 +179,19 @@ function SkillBar({
       aria-hidden={clone || undefined}
       tabIndex={clone ? -1 : undefined}
       data-qa-clone={clone ? "" : undefined}
-      className="group mr-2 flex shrink-0 items-center gap-2 rounded-lg border border-border bg-card/50 px-3 py-2 transition-colors hover:border-foreground/20 hover:bg-accent/40"
+      className="group mr-1.5 flex shrink-0 items-center gap-1.5 rounded-md border border-border/60 bg-card/40 px-2.5 py-1 text-[11px] transition-colors hover:border-foreground/15 hover:bg-accent/50"
     >
       <Icon
         aria-hidden
-        className="h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground"
+        className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground"
       />
-      <span className="whitespace-nowrap text-xs font-medium text-foreground/90">
+      <span className="whitespace-nowrap font-medium text-foreground/80 leading-none">
         {label}
       </span>
       {locked && (
         <Lock
           aria-hidden
-          className="h-3 w-3 shrink-0 text-muted-foreground/60"
+          className="h-2.5 w-2.5 shrink-0 text-muted-foreground/50"
         />
       )}
     </button>
@@ -191,7 +202,7 @@ function SkillBar({
  * Single-row seamless marquee. Renders the items twice (real + an aria-hidden
  * clone) and a requestAnimationFrame loop translates the track left at a
  * constant speed, wrapping by exactly one copy width (`scrollWidth / 2`, exact
- * because each bar carries its own `mr-2` instead of a flex gap) so the loop
+ * because each bar carries its own `mr-1.5` instead of a flex gap) so the loop
  * has no seam.
  *
  * Driving the transform from JS — rather than a CSS animation — is deliberate:
@@ -256,7 +267,7 @@ function Marquee({
 
   return (
     <div
-      className="qa-marquee-viewport overflow-hidden pb-1"
+      className="qa-marquee-viewport overflow-hidden"
       onPointerEnter={pause}
       onPointerLeave={resume}
       onFocus={pause}
@@ -320,6 +331,86 @@ export function QuickActions({ onSelect, agentType }: QuickActionsProps) {
     [agentType, t]
   )
 
+  // In-flight auto-enable guard: a single re-entrant click (or two cards
+  // racing) would fire two link/install sequences. Best-effort — we don't
+  // disable the buttons, just skip if one is already running.
+  const enablingRef = useRef(false)
+
+  // Auto-enable a coding expert skill by linking it to the current agent, then
+  // inject the badge as if the card had been unlocked all along. Any failure
+  // falls back to the settings-toast flow so the user can resolve it manually
+  // (e.g. a real directory blocking the link).
+  const autoEnableExpert = useCallback(
+    async (item: ExpertListItem, label: string) => {
+      if (!agentType || enablingRef.current) return
+      enablingRef.current = true
+      try {
+        await expertsLinkToAgent({
+          expertId: item.metadata.id,
+          agentType,
+        })
+        await refreshEnabledSkillsSnapshot()
+        onSelect({ text: "", skill: { id: item.metadata.id, label } })
+        toast.success(t("notEnabled.linked", { skill: label }))
+      } catch (err) {
+        console.error("[QuickActions] auto-enable expert failed:", err)
+        notifyNotEnabled(label, "experts")
+      } finally {
+        enablingRef.current = false
+      }
+    },
+    [agentType, onSelect, t, notifyNotEnabled]
+  )
+
+  // Auto-enable an office skill. Office skills need the OfficeCLI binary
+  // installed AND its skills synced before the link can succeed, so when the
+  // binary is missing/unhealthy we kick off a silent background install+sync
+  // first (with a non-blocking "preparing" toast), then link, then inject.
+  // Falls back to the settings toast on any failure so the user can intervene.
+  const autoEnableOffice = useCallback(
+    async (action: OfficeAction, label: string) => {
+      if (!agentType || enablingRef.current) return
+      enablingRef.current = true
+      try {
+        // Ensure OfficeCLI is installed and runnable. The install can take tens
+        // of seconds (downloads a binary); surface a non-blocking progress hint
+        // so the user knows something is happening, then await completion.
+        const detected = await officecliDetect()
+        const healthy = detected.installed && !detected.runtimeError
+        if (!healthy) {
+          const prepToast = toast.loading(t("notEnabled.preparing"))
+          try {
+            await officecliInstall(
+              typeof crypto !== "undefined" && "randomUUID" in crypto
+                ? crypto.randomUUID()
+                : String(Date.now())
+            )
+            await officecliSyncSkills()
+          } finally {
+            toast.dismiss(prepToast)
+          }
+        }
+        await officecliSkillLinkToAgent({
+          skillId: action.skillId,
+          agentType,
+        })
+        await refreshEnabledSkillsSnapshot()
+        onSelect({
+          text: t(action.promptKey as Parameters<typeof t>[0]),
+          skill: { id: action.skillId, label },
+        })
+        toast.success(t("notEnabled.linked", { skill: label }))
+      } catch (err) {
+        console.error("[QuickActions] auto-enable office failed:", err)
+        toast.error(t("notEnabled.autoInstallFailed"))
+        notifyNotEnabled(label, "office-tools")
+      } finally {
+        enablingRef.current = false
+      }
+    },
+    [agentType, onSelect, t, notifyNotEnabled]
+  )
+
   // Restore the last-picked tab; persist on change. The lazy initializer reads
   // localStorage on each mount (QuickActions only renders client-side in
   // welcome mode, so there is no SSR hydration mismatch), so reopening a new
@@ -330,7 +421,12 @@ export function QuickActions({ onSelect, agentType }: QuickActionsProps) {
     (action: OfficeAction) => {
       const label = t(action.id as Parameters<typeof t>[0])
       if (isLocked(action.skillId)) {
-        notifyNotEnabled(label, "office-tools")
+        // No agent resolved yet → can't link; fall back to the settings prompt.
+        if (!agentType) {
+          notifyNotEnabled(label, "office-tools")
+          return
+        }
+        void autoEnableOffice(action, label)
         return
       }
       onSelect({
@@ -338,7 +434,7 @@ export function QuickActions({ onSelect, agentType }: QuickActionsProps) {
         skill: { id: action.skillId, label },
       })
     },
-    [onSelect, t, isLocked, notifyNotEnabled]
+    [onSelect, t, isLocked, agentType, notifyNotEnabled, autoEnableOffice]
   )
 
   const handleExpert = useCallback(
@@ -346,7 +442,11 @@ export function QuickActions({ onSelect, agentType }: QuickActionsProps) {
       const label =
         pickLocalized(item.metadata.display_name, locale) || item.metadata.id
       if (isLocked(item.metadata.id)) {
-        notifyNotEnabled(label, "experts")
+        if (!agentType) {
+          notifyNotEnabled(label, "experts")
+          return
+        }
+        void autoEnableExpert(item, label)
         return
       }
       // Experts are open-ended coding skills: inject just the leading
@@ -354,7 +454,7 @@ export function QuickActions({ onSelect, agentType }: QuickActionsProps) {
       // describe the task (no canned template like office docs).
       onSelect({ text: "", skill: { id: item.metadata.id, label } })
     },
-    [onSelect, locale, isLocked, notifyNotEnabled]
+    [onSelect, locale, isLocked, agentType, notifyNotEnabled, autoEnableExpert]
   )
 
   const { codingFeatured, codingRest } = useMemo(() => {
@@ -397,7 +497,10 @@ export function QuickActions({ onSelect, agentType }: QuickActionsProps) {
           <button
             key={key}
             type="button"
-            onClick={() => { setTab(key); saveQuickActionsTab(key) }}
+            onClick={() => {
+              setTab(key)
+              saveQuickActionsTab(key)
+            }}
             className={cn(
               "rounded-full px-3 py-1 text-xs font-medium transition-all",
               tab === key
@@ -453,7 +556,9 @@ export function QuickActions({ onSelect, agentType }: QuickActionsProps) {
                 key={f.id}
                 icon={getExpertIcon(f.item.metadata.icon)}
                 accent={f.accent}
-                title={pickLocalized(f.item.metadata.display_name, locale) || f.id}
+                title={
+                  pickLocalized(f.item.metadata.display_name, locale) || f.id
+                }
                 description={t(f.descKey as Parameters<typeof t>[0])}
                 onClick={() => handleExpert(f.item)}
                 locked={isLocked(f.item.metadata.id)}
@@ -464,7 +569,9 @@ export function QuickActions({ onSelect, agentType }: QuickActionsProps) {
           <Marquee itemCount={codingRest.length}>
             {(clone) =>
               codingRest.slice(0, 6).map((item) => {
-                const label = pickLocalized(item.metadata.display_name, locale) || item.metadata.id
+                const label =
+                  pickLocalized(item.metadata.display_name, locale) ||
+                  item.metadata.id
                 return (
                   <SkillBar
                     key={`${item.metadata.id}-${clone ? "c" : "r"}`}
@@ -492,7 +599,9 @@ export function QuickActions({ onSelect, agentType }: QuickActionsProps) {
                   key={f.id}
                   icon={getExpertIcon(f.item.metadata.icon)}
                   accent={f.accent}
-                  title={pickLocalized(f.item.metadata.display_name, locale) || f.id}
+                  title={
+                    pickLocalized(f.item.metadata.display_name, locale) || f.id
+                  }
                   description={t(f.descKey as Parameters<typeof t>[0])}
                   onClick={() => handleExpert(f.item)}
                   locked={isLocked(f.item.metadata.id)}
@@ -504,7 +613,9 @@ export function QuickActions({ onSelect, agentType }: QuickActionsProps) {
           <Marquee itemCount={codingRest.length}>
             {(clone) =>
               codingRest.map((item) => {
-                const label = pickLocalized(item.metadata.display_name, locale) || item.metadata.id
+                const label =
+                  pickLocalized(item.metadata.display_name, locale) ||
+                  item.metadata.id
                 return (
                   <SkillBar
                     key={`${item.metadata.id}-${clone ? "c" : "r"}`}

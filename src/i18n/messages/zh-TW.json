@@ -2166,7 +2166,10 @@
             "title": "「{skill}」技能尚未對 {agent} 啟用",
             "description": "前往設定啟用後即可在此使用。",
             "action": "前往啟用",
-            "hint": "技能未啟用"
+            "hint": "技能未啟用",
+            "linked": "已啟用 {skill}",
+            "preparing": "正在準備依賴…",
+            "autoInstallFailed": "依賴自動安裝失敗，請前往設定手動處理"
           }
         }
       },

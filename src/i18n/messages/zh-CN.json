@@ -2170,7 +2170,9 @@
             "description": "前往设置启用后即可在此使用。",
             "action": "去启用",
             "hint": "技能未启用",
-            "linked": "已启用 {skill}"
+            "linked": "已启用 {skill}",
+            "preparing": "正在准备依赖…",
+            "autoInstallFailed": "依赖自动安装失败，请前往设置手动处理"
           }
         }
       },
