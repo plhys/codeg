@@ -56,7 +56,7 @@ pub fn build_env_filter(settings: &LogSettings) -> EnvFilter {
             directives.push_str(&format!(",{}={}", target, t.level.directive()));
         }
     }
-    directives.push_str(",codeg_lib::logging=off");
+    directives.push_str(",veryagent_lib::logging=off");
     EnvFilter::builder().parse_lossy(directives)
 }
 
@@ -66,8 +66,8 @@ pub fn build_env_filter(settings: &LogSettings) -> EnvFilter {
 /// recursion backstop.
 fn is_valid_target(target: &str) -> bool {
     if target.is_empty()
-        || target == "codeg_lib::logging"
-        || target.starts_with("codeg_lib::logging::")
+        || target == "veryagent_lib::logging"
+        || target.starts_with("veryagent_lib::logging::")
     {
         return false;
     }
@@ -147,7 +147,7 @@ fn init_file_writer(dir: &Path, prefix: &str) -> Option<(NonBlocking, WorkerGuar
     Some(tracing_appender::non_blocking(appender))
 }
 
-/// Build and install the subscriber. `file_dir` is `None` for `codeg-mcp`
+/// Build and install the subscriber. `file_dir` is `None` for `veryagent-mcp`
 /// (stderr only). Returns the reload handle and the appender guard.
 fn build_subscriber(
     initial: LogLevel,
@@ -159,7 +159,7 @@ fn build_subscriber(
     // same `env_level_override` precedence as `env_level_is_set`, so a level
     // applied here is exactly the one the UI reports as env-locked.
     let initial_filter = match env_level_override() {
-        Some(s) => EnvFilter::builder().parse_lossy(format!("{s},codeg_lib::logging=off")),
+        Some(s) => EnvFilter::builder().parse_lossy(format!("{s},veryagent_lib::logging=off")),
         // Phase 1 has no DB yet, so no persisted per-target overrides; just the
         // default level. Phase 2 (apply_persisted_level) rebuilds with targets.
         None => build_env_filter(&LogSettings {
@@ -170,7 +170,7 @@ fn build_subscriber(
     let (filter_layer, reload_handle) = reload::Layer::new(initial_filter);
 
     // stderr fmt layer — MUST target stderr (not the default stdout): in
-    // codeg-mcp stdout is the JSON-RPC channel, and elsewhere the migrated
+    // veryagent-mcp stdout is the JSON-RPC channel, and elsewhere the migrated
     // eprintln! all went to stderr.
     let file = file_dir.and_then(|dir| init_file_writer(dir, file_prefix));
 
@@ -201,21 +201,21 @@ fn build_subscriber(
     (reload_handle, guard)
 }
 
-/// Phase 1 for the desktop `codeg` binary: stderr + file (`codeg.<date>.log`) +
+/// Phase 1 for the desktop `veryagent` binary: stderr + file (`veryagent.<date>.log`) +
 /// buffer. Default level is env-or-`info`; [`apply_persisted_level`] refines it
 /// once the DB is open.
 pub fn init_desktop() -> LogGuard {
-    init_with_file("codeg")
+    init_with_file("veryagent")
 }
 
-/// Phase 1 for `codeg-server`: stderr + file (`codeg-server.<date>.log`) +
+/// Phase 1 for `veryagent-server`: stderr + file (`veryagent-server.<date>.log`) +
 /// buffer.
 pub fn init_server() -> LogGuard {
-    init_with_file("codeg-server")
+    init_with_file("veryagent-server")
 }
 
 fn init_with_file(prefix: &str) -> LogGuard {
-    let dir = crate::paths::codeg_logs_root();
+    let dir = crate::paths::veryagent_logs_root();
     let (reload, guard) = build_subscriber(LogLevel::default(), Some(&dir), prefix);
     LogHub::install(reload);
     LogGuard { _guard: guard }
@@ -223,11 +223,11 @@ fn init_with_file(prefix: &str) -> LogGuard {
 
 /// Install a **stderr-only** subscriber (no file / buffer / hub / emitter) for
 /// process modes that run before — or instead of — the full logging stack:
-/// `codeg-mcp`, the `--supervise` supervisor, and the `--credential-helper`
+/// `veryagent-mcp`, the `--supervise` supervisor, and the `--credential-helper`
 /// subprocess. Without an installed subscriber, `tracing` calls on those paths
 /// are silently dropped (unlike the old `eprintln!`, which always hit stderr).
 ///
-/// stderr (not stdout) is mandatory: in `codeg-mcp` and the credential helper,
+/// stderr (not stdout) is mandatory: in `veryagent-mcp` and the credential helper,
 /// stdout is a protocol channel. No file appender: those modes are short-lived
 /// or multi-process and must not clobber a shared rolling file. No hub: nothing
 /// to buffer/emit, so `BufferEmitLayer` short-circuits.
@@ -236,7 +236,7 @@ pub fn init_stderr_only() -> LogGuard {
     LogGuard { _guard: guard }
 }
 
-/// Phase 1 for `codeg-mcp`. See [`init_stderr_only`].
+/// Phase 1 for `veryagent-mcp`. See [`init_stderr_only`].
 pub fn init_mcp() -> LogGuard {
     init_stderr_only()
 }
@@ -271,7 +271,7 @@ mod tests {
             level: LogLevel::Info,
             targets: vec![
                 TargetDirective {
-                    target: "codeg_lib::acp".into(),
+                    target: "veryagent_lib::acp".into(),
                     level: LogLevel::Debug,
                 },
                 // Whitespace-only target is skipped, not emitted as a bare "=trace".
@@ -280,22 +280,22 @@ mod tests {
                     level: LogLevel::Trace,
                 },
                 TargetDirective {
-                    target: "codeg_lib::web".into(),
+                    target: "veryagent_lib::web".into(),
                     level: LogLevel::Warn,
                 },
             ],
         };
         let rendered = build_env_filter(&settings).to_string();
         assert!(
-            rendered.contains("codeg_lib::acp=debug"),
+            rendered.contains("veryagent_lib::acp=debug"),
             "missing acp override: {rendered}"
         );
         assert!(
-            rendered.contains("codeg_lib::web=warn"),
+            rendered.contains("veryagent_lib::web=warn"),
             "missing web override: {rendered}"
         );
         assert!(
-            rendered.contains("codeg_lib::logging=off"),
+            rendered.contains("veryagent_lib::logging=off"),
             "missing backstop: {rendered}"
         );
         assert!(
@@ -314,27 +314,27 @@ mod tests {
                     level: LogLevel::Trace,
                 },
                 TargetDirective {
-                    target: "codeg_lib::logging".into(), // backstop override attempt → dropped
+                    target: "veryagent_lib::logging".into(), // backstop override attempt → dropped
                     level: LogLevel::Trace,
                 },
                 TargetDirective {
-                    target: "codeg_lib::acp".into(),
+                    target: "veryagent_lib::acp".into(),
                     level: LogLevel::Debug,
                 },
             ],
         };
         let rendered = build_env_filter(&settings).to_string();
-        assert!(rendered.contains("codeg_lib::acp=debug"), "{rendered}");
+        assert!(rendered.contains("veryagent_lib::acp=debug"), "{rendered}");
         assert!(!rendered.contains("bad-target"), "{rendered}");
         // The logging module stays off; the override attempt is dropped.
-        assert!(rendered.contains("codeg_lib::logging=off"), "{rendered}");
-        assert!(!rendered.contains("codeg_lib::logging=trace"), "{rendered}");
+        assert!(rendered.contains("veryagent_lib::logging=off"), "{rendered}");
+        assert!(!rendered.contains("veryagent_lib::logging=trace"), "{rendered}");
     }
 
     #[test]
     fn is_valid_target_grammar() {
-        assert!(is_valid_target("codeg_lib::acp"));
-        assert!(is_valid_target("codeg_lib::acp::delegation"));
+        assert!(is_valid_target("veryagent_lib::acp"));
+        assert!(is_valid_target("veryagent_lib::acp::delegation"));
         assert!(is_valid_target("a"));
         assert!(!is_valid_target(""));
         assert!(!is_valid_target("bad-target"));
@@ -342,8 +342,8 @@ mod tests {
         assert!(!is_valid_target("trailing::"));
         assert!(!is_valid_target("a:::b"));
         assert!(!is_valid_target("has space"));
-        assert!(!is_valid_target("codeg_lib::logging"));
-        assert!(!is_valid_target("codeg_lib::logging::hub"));
+        assert!(!is_valid_target("veryagent_lib::logging"));
+        assert!(!is_valid_target("veryagent_lib::logging::hub"));
     }
 
     #[test]

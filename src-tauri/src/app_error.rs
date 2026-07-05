@@ -55,7 +55,7 @@ pub const UPLOAD_I18N_KEY_QUOTA_EXCEEDED: &str = "errors.upload.quotaExceeded";
 pub const BACKUP_I18N_KEY_BAD_PASSPHRASE: &str = "backup.restore.error.badPassphrase";
 /// A backup entry's bytes did not match the manifest checksum.
 pub const BACKUP_I18N_KEY_CORRUPTED: &str = "backup.restore.error.corrupted";
-/// The file is not a codeg backup, or its `format_version` is newer than this
+/// The file is not a veryagent backup, or its `format_version` is newer than this
 /// binary understands.
 pub const BACKUP_I18N_KEY_UNKNOWN_FORMAT: &str = "backup.restore.error.unknownFormat";
 /// The backup was taken by a newer app version whose DB schema this binary

@@ -88,6 +88,7 @@ interface ConversationShellProps {
    *  (e.g. the "restart to apply" config-stale banner). Renders nothing when
    *  omitted. */
   topBanner?: ReactNode
+  toolbarSlot?: ReactNode
 }
 
 export function ConversationShell({
@@ -139,6 +140,7 @@ export function ConversationShell({
   onCancelQueueEdit,
   onForkSend,
   topBanner,
+  toolbarSlot,
 }: ConversationShellProps) {
   const tAcp = useTranslations("Folder.chat.acpConnections")
   const retryLineText = useMemo(() => {
@@ -265,6 +267,7 @@ export function ConversationShell({
               onForkSend={onForkSend}
               onAddFeedback={onAddFeedback}
               feedbackAddDisabled={feedbackAddDisabled}
+              toolbarSlot={toolbarSlot}
             />
           </div>
         )}

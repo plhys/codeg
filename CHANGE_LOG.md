@@ -76,13 +76,13 @@
 
 ```tsx
 // 改前
-"codeg-composer-chrome @container relative flex flex-col rounded-xl border border-input bg-transparent transition-colors",
+"veryagent-composer-chrome @container relative flex flex-col rounded-xl border border-input bg-transparent transition-colors",
 folderBranchPickerAttached
   ? "bg-background focus-within:border-ring focus-within:ring-[3px] focus-within:ring-inset focus-within:ring-ring/50"
   : "focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50",
 
 // 改后
-"codeg-composer-chrome @container relative flex flex-col rounded-xl border border-input bg-transparent transition-all",
+"veryagent-composer-chrome @container relative flex flex-col rounded-xl border border-input bg-transparent transition-all",
 folderBranchPickerAttached
   ? "bg-background focus-within:border-ring focus-within:shadow-[0_0_0_2px_var(--ring),0_0_20px_-6px_var(--ring)]"
   : "focus-within:border-ring focus-within:shadow-[0_0_0_2px_var(--ring),0_0_20px_-6px_var(--ring)]",

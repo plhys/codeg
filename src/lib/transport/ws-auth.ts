@@ -1,5 +1,5 @@
-export const CODEG_WS_PROTOCOL = "codeg-events"
-const CODEG_WS_TOKEN_PROTOCOL_PREFIX = "codeg-token."
+export const CODEG_WS_PROTOCOL = "veryagent-events"
+const CODEG_WS_TOKEN_PROTOCOL_PREFIX = "veryagent-token."
 
 function base64UrlEncode(value: string): string {
   const bytes = new TextEncoder().encode(value)

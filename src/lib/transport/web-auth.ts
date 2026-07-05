@@ -5,7 +5,7 @@
 // rules, multi-tenant prefixing, etc.) doesn't have to be remembered at every
 // call site.
 
-const TOKEN_KEY = "codeg_token"
+const TOKEN_KEY = "veryagent_token"
 
 export function getCodegToken(): string {
   return localStorage.getItem(TOKEN_KEY) ?? ""

@@ -146,13 +146,6 @@ function normalizePath(path: string): string {
   return noTrailingSlash || "/"
 }
 
-function isWindowsRuntime(): boolean {
-  if (typeof navigator === "undefined") return false
-  const platform = navigator.platform.toLowerCase()
-  const userAgent = navigator.userAgent.toLowerCase()
-  return platform.includes("win") || userAgent.includes("windows")
-}
-
 export function SettingsShell({ children }: SettingsShellProps) {
   const t = useTranslations("SettingsShell")
   const pathname = usePathname()
@@ -162,7 +155,7 @@ export function SettingsShell({ children }: SettingsShellProps) {
   const [navOpen, setNavOpen] = useState(false)
 
   useEffect(() => {
-    document.title = `${t("title")} - codeg`
+    document.title = `${t("title")} - veryagent`
   }, [t])
 
   const navigateTo = useCallback(
@@ -182,11 +175,6 @@ export function SettingsShell({ children }: SettingsShellProps) {
       // remote id and the next page falls back to the local Tauri backend.
       const search = window.location.search
       const fullTarget = search ? `${target}${search}` : target
-
-      if (isWindowsRuntime()) {
-        window.location.assign(fullTarget)
-        return
-      }
 
       router.push(fullTarget)
       setNavOpen(false)

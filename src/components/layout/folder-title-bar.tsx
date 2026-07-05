@@ -196,7 +196,7 @@ export function FolderTitleBar() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 hover:text-foreground/80"
+                  className="group relative h-6 w-6 hover:text-foreground/80"
                   onClick={toggle}
                   title={tTitleBar("withShortcut", {
                     label: tTitleBar(isOpen ? "hideSidebar" : "showSidebar"),
@@ -206,7 +206,12 @@ export function FolderTitleBar() {
                     ),
                   })}
                 >
-                  <PanelLeft className="h-3.5 w-3.5" />
+                  <img
+                    src="/vagent-icon-030.png"
+                    alt=""
+                    className="h-5 w-5 object-contain group-hover:hidden"
+                  />
+                  <PanelLeft className="hidden h-5 w-5 group-hover:block" />
                 </Button>
                 <RemoteWorkspaceDropdown />
                 <Button
@@ -216,7 +221,7 @@ export function FolderTitleBar() {
                   onClick={handleOpenPet}
                   title={tPet("manager.summon")}
                 >
-                  <PawPrint className="h-3.5 w-3.5" />
+                  <PawPrint className="h-4 w-4" />
                 </Button>
               </div>
               <BranchDropdown />
@@ -244,7 +249,7 @@ export function FolderTitleBar() {
                       onClick={toggleAuxPanel}
                       disabled={!activeFolder}
                     >
-                      <PanelRight className="h-3.5 w-3.5" />
+                      <PanelRight className="h-4 w-4" />
                       {tTitleBar("toggleAuxPanel")}
                     </DropdownMenuItem>
                   )}
@@ -252,11 +257,11 @@ export function FolderTitleBar() {
                     onClick={() => toggleTerminal()}
                     disabled={!activeFolder}
                   >
-                    <SquareTerminal className="h-3.5 w-3.5" />
+                    <SquareTerminal className="h-4 w-4" />
                     {tTitleBar("toggleTerminal")}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleOpenSettings}>
-                    <Settings className="h-3.5 w-3.5" />
+                    <Settings className="h-4 w-4" />
                     {tTitleBar("openSettings")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -282,7 +287,7 @@ export function FolderTitleBar() {
                     ),
                   })}
                 >
-                  <SquareTerminal className="h-3.5 w-3.5" />
+                  <SquareTerminal className="h-4 w-4" />
                 </Button>
                 {/* Folderless chat conversations hide the aux panel entirely. */}
                 {!isChatMode && (
@@ -300,7 +305,7 @@ export function FolderTitleBar() {
                       ),
                     })}
                   >
-                    <PanelRight className="h-3.5 w-3.5" />
+                    <PanelRight className="h-4 w-4" />
                   </Button>
                 )}
                 {/* Desktop search moved into the sidebar's fixed top region;
@@ -318,7 +323,7 @@ export function FolderTitleBar() {
                     ),
                   })}
                 >
-                  <Settings className="h-3.5 w-3.5" />
+                  <Settings className="h-4 w-4" />
                 </Button>
               </div>
             </div>

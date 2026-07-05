@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest"
 import { defaultRehypePlugins } from "streamdown"
 
-import { rehypePluginsAllowingCodeg } from "./rehype-allow-codeg"
+import { rehypePluginsAllowingCodeg } from "./rehype-allow-veryagent"
 
 /** Pull the href protocol allow-list out of a `[rehypeSanitize, schema]` tuple. */
 function hrefProtocols(plugin: unknown): string[] | undefined {
@@ -11,7 +11,7 @@ function hrefProtocols(plugin: unknown): string[] | undefined {
 }
 
 describe("rehypePluginsAllowingCodeg", () => {
-  it("adds `codeg` to the sanitize schema's href protocol allow-list", () => {
+  it("adds `veryagent` to the sanitize schema's href protocol allow-list", () => {
     // Guards against an upstream rename of the `sanitize` key — the whole fix
     // hinges on this entry existing.
     const sanitizeIndex = Object.keys(defaultRehypePlugins).indexOf("sanitize")
@@ -20,9 +20,9 @@ describe("rehypePluginsAllowingCodeg", () => {
     const href = hrefProtocols(
       rehypePluginsAllowingCodeg(defaultRehypePlugins)[sanitizeIndex]
     )
-    expect(href).toContain("codeg")
+    expect(href).toContain("veryagent")
     // Exactly once — no duplicate even if re-derived.
-    expect(href?.filter((p) => p === "codeg")).toHaveLength(1)
+    expect(href?.filter((p) => p === "veryagent")).toHaveLength(1)
     // Pre-existing protocols are preserved (https is always present).
     expect(href).toContain("https")
   })
@@ -39,10 +39,10 @@ describe("rehypePluginsAllowingCodeg", () => {
   })
 
   it("clones rather than mutating the shipped sanitize schema", () => {
-    // The shipped default must not already contain codeg, else the fix is moot.
-    expect(hrefProtocols(defaultRehypePlugins.sanitize)).not.toContain("codeg")
+    // The shipped default must not already contain veryagent, else the fix is moot.
+    expect(hrefProtocols(defaultRehypePlugins.sanitize)).not.toContain("veryagent")
     rehypePluginsAllowingCodeg(defaultRehypePlugins)
     // Still absent on the original after deriving — we built a new schema.
-    expect(hrefProtocols(defaultRehypePlugins.sanitize)).not.toContain("codeg")
+    expect(hrefProtocols(defaultRehypePlugins.sanitize)).not.toContain("veryagent")
   })
 })

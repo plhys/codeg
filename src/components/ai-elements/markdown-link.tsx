@@ -93,13 +93,13 @@ export function MarkdownLink({
     )
   }
 
-  // A codeg:// reference link renders as an inline badge, mirroring the
+  // A veryagent:// reference link renders as an inline badge, mirroring the
   // composer's reference chips: session / commit / agent links, plus the inert
-  // `codeg://embedded/…` badge a path-less pasted attachment serializes to (its
+  // `veryagent://embedded/…` badge a path-less pasted attachment serializes to (its
   // bytes travel out of band, so it has no openable target). The same parser the
   // editor uses on draft restore recovers refType/id/meta from the uri; the link
   // text is the label.
-  if (!isIncomplete && href.toLowerCase().startsWith("codeg:")) {
+  if (!isIncomplete && href.toLowerCase().startsWith("veryagent:")) {
     const reference = parseCodegReferenceUri(href, nodeText(children))
     if (reference) return <ReferenceBadge data={reference} />
   }

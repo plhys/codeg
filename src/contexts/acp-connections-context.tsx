@@ -170,7 +170,7 @@ export interface ConnectionState {
    *  the runtime as a synthesized user turn; `null` outside an active turn. */
   pendingUserMessage: PendingUserMessage | null
   pendingQuestion: PendingQuestion | null
-  /** Awaiting-answer multiple-choice `ask_user_question` (the codeg-mcp blocking
+  /** Awaiting-answer multiple-choice `ask_user_question` (the veryagent-mcp blocking
    *  tool). Set from a `question_request` event or a snapshot's
    *  `pending_question`; cleared on `question_resolved` or turn end. Distinct
    *  from the free-text `pendingQuestion` above. */

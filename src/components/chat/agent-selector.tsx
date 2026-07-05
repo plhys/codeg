@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslations } from "next-intl"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useAcpAgents } from "@/hooks/use-acp-agents"
 import type { AgentType, AcpAgentInfo } from "@/lib/types"
-import { AGENT_LABELS } from "@/lib/types"
+import { AGENT_LABELS, compareAgentType } from "@/lib/types"
 import { AgentIcon } from "@/components/agent-icon"
 import { cn } from "@/lib/utils"
 
@@ -23,6 +24,9 @@ interface AgentSelectorProps {
   onAgentsLoaded?: (agents: AcpAgentInfo[]) => void
   onOpenAgentsSettings?: () => void
   disabled?: boolean
+  /** Compact mode: smaller pills for toolbar embedding. */
+  compact?: boolean
+  maxVisible?: number
 }
 
 export function AgentSelector({
@@ -32,11 +36,16 @@ export function AgentSelector({
   onAgentsLoaded,
   onOpenAgentsSettings,
   disabled = false,
+  compact = false,
+  maxVisible = 2,
 }: AgentSelectorProps) {
   const t = useTranslations("Folder.chat.agentSelector")
   const { agents: rawAgents } = useAcpAgents()
   const agents = useMemo<AcpAgentInfo[]>(
-    () => rawAgents.filter((a) => a.enabled),
+    () =>
+      rawAgents
+        .filter((a) => a.enabled)
+        .sort((a, b) => compareAgentType(a.agent_type, b.agent_type)),
     [rawAgents]
   )
   const onSelectRef = useRef(onSelect)
@@ -58,6 +67,7 @@ export function AgentSelector({
 
   // Sliding indicator state
   const containerRef = useRef<HTMLDivElement>(null)
+  const [scrollIdx, setScrollIdx] = useState(0)
   const itemRefs = useRef<Map<AgentType, HTMLButtonElement>>(new Map())
   const [indicator, setIndicator] = useState<{
     left: number
@@ -179,13 +189,29 @@ export function AgentSelector({
     )
   }
 
+  const displayAgents = compact ? agents.slice(scrollIdx, scrollIdx + maxVisible) : agents
+  const canScrollLeft = compact && scrollIdx > 0
+  const canScrollRight = compact && scrollIdx + maxVisible < agents.length
+  const scrollL = () => setScrollIdx((p) => Math.max(0, p - 1))
+  const scrollR = () => setScrollIdx((p) => Math.min(agents.length - maxVisible, p + 1))
+
   return (
-    <div
-      ref={containerRef}
-      className="relative inline-flex items-center self-center rounded-full bg-muted/50 p-0.5 border border-border/50"
-    >
-      {/* Sliding droplet indicator */}
-      {indicator && (
+    <div className="inline-flex items-center gap-0.5">
+      {compact && (
+        <button type="button" onClick={scrollL} disabled={!canScrollLeft}
+          className="rounded-full p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-20">
+          <ChevronLeft className="h-3 w-3" />
+        </button>
+      )}
+      <div
+        ref={containerRef}
+        className={cn(
+          "relative inline-flex items-center self-center rounded-full border border-border/50",
+          compact ? "bg-transparent p-0" : "bg-muted/50 p-px"
+        )}
+      >
+      {/* Sliding droplet indicator — only in non-compact mode */}
+      {!compact && indicator && (
         <div
           className="absolute top-0.5 bottom-0.5 rounded-full bg-background shadow-sm ring-1 ring-border/50 transition-all duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
           style={{
@@ -194,7 +220,7 @@ export function AgentSelector({
           }}
         />
       )}
-      {agents.map((agent) => {
+      {displayAgents.map((agent) => {
         const isSelected = selected === agent.agent_type
         return (
           <button
@@ -204,8 +230,10 @@ export function AgentSelector({
             disabled={disabled || !agent.available}
             onClick={() => handleSelect(agent.agent_type)}
             className={cn(
-              "relative z-10 inline-flex items-center justify-center gap-1.5 rounded-full text-xs font-medium transition-all duration-300",
-              isSelected ? "px-3 py-2" : "px-2 py-2",
+              "relative z-10 inline-flex items-center justify-center gap-1 rounded-full font-medium",
+              compact
+                ? cn("text-[10px] px-1.5 py-0.5", isSelected && "bg-background shadow-sm ring-1 ring-border/60")
+                : cn("text-[11px] transition-all duration-300", isSelected ? "px-2 py-1" : "px-1.5 py-1"),
               disabled || !agent.available
                 ? "cursor-not-allowed opacity-40"
                 : "cursor-pointer",
@@ -216,12 +244,14 @@ export function AgentSelector({
           >
             <AgentIcon
               agentType={agent.agent_type}
-              className="w-4 h-4 shrink-0"
+              className={compact ? "w-3 h-3 shrink-0" : "w-3.5 h-3.5 shrink-0"}
             />
             <span
               className={cn(
-                "grid transition-[grid-template-columns] duration-300",
-                isSelected ? "grid-cols-[1fr]" : "grid-cols-[0fr]"
+                compact
+                  ? "overflow-hidden truncate"
+                  : "grid transition-[grid-template-columns] duration-300",
+                !compact && (isSelected ? "grid-cols-[1fr]" : "grid-cols-[0fr]")
               )}
             >
               <span
@@ -236,6 +266,13 @@ export function AgentSelector({
           </button>
         )
       })}
+    </div>
+      {compact && (
+        <button type="button" onClick={scrollR} disabled={!canScrollRight}
+          className="rounded-full p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-20">
+          <ChevronRight className="h-3 w-3" />
+        </button>
+      )}
     </div>
   )
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { memo } from "react"
+import { memo, type ReactNode } from "react"
 import { useTranslations } from "next-intl"
 import type {
   AgentType,
@@ -76,6 +76,7 @@ interface ChatInputProps {
    *  (new-conversation) composer, which sits in a roomy empty state; active and
    *  historical conversations keep the compact default. */
   tall?: boolean
+  toolbarSlot?: ReactNode
 }
 
 export const ChatInput = memo(function ChatInput({
@@ -120,6 +121,7 @@ export const ChatInput = memo(function ChatInput({
   onInjectConsumed,
   flush = false,
   tall = false,
+  toolbarSlot,
 }: ChatInputProps) {
   const t = useTranslations("Folder.chat.chatInput")
   const isConnected = status === "connected"
@@ -182,6 +184,7 @@ export const ChatInput = memo(function ChatInput({
         feedbackAddDisabled={feedbackAddDisabled}
         injectContent={injectContent}
         onInjectConsumed={onInjectConsumed}
+        toolbarSlot={toolbarSlot}
         placeholder={
           isConnecting
             ? t("connecting")

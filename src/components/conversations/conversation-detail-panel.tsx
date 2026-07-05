@@ -232,7 +232,14 @@ const ConversationTabView = memo(function ConversationTabView({
     number | null
   >(null)
   const dbConversationId = conversationId ?? createdConversationId
-  const [draftAgentType, setDraftAgentType] = useState<AgentType>(agentType)
+  const [draftAgentType, setDraftAgentType] = useState<AgentType>(() => {
+    // Restore the user's preferred agent from the last session.
+    try {
+      const saved = localStorage.getItem("workspace:preferred-agent")
+      if (saved) return saved as AgentType
+    } catch {}
+    return agentType
+  })
   const selectedAgent = conversationId != null ? agentType : draftAgentType
   // Seed from localStorage so the React state reflects the user's saved
   // mode for this agent immediately on mount. Without this seed, a reuse-
@@ -1073,6 +1080,8 @@ const ConversationTabView = memo(function ConversationTabView({
       // Real user click — clear the provisional flag so TabProvider's
       // correction effect leaves this tab alone.
       confirmDraftAgent(tabId, nextAgentType)
+      // Persist the user's preference so the next cold start defaults here.
+      try { localStorage.setItem("workspace:preferred-agent", nextAgentType) } catch {}
     },
     [confirmDraftAgent, tabId]
   )
@@ -1350,14 +1359,25 @@ const ConversationTabView = memo(function ConversationTabView({
       onCancelQueueEdit={handleQueueCancelEdit}
     >
       {isWelcomeMode ? (
-        <div className="relative isolate flex h-full min-h-0 flex-col overflow-x-hidden overflow-y-auto">
-          <div className="flex-1" />
-          <div className="mx-auto flex w-full max-w-3xl shrink-0 flex-col gap-6 px-4 py-4">
+        <div className="flex h-full min-h-0 flex-col items-center overflow-x-hidden overflow-y-auto px-4">
+          {/* Logo — centered, slightly above middle. */}
+          <div className="flex-[0.6]" />
+          <img
+            src="/welcome-logo.png"
+            alt="veryagent"
+            className="h-auto w-48 shrink-0 select-none"
+          />
+
+          {/* Greeting + tip below the logo. */}
+          <div className="mt-5 flex w-full max-w-3xl shrink-0 flex-col items-center gap-2">
             <WelcomeHero />
-            <QuickActions
-              onSelect={handleQuickAction}
-              agentType={selectedAgent}
-            />
+            <WelcomeTip />
+          </div>
+
+          <div className="flex-1" />
+
+          {/* Chat input. */}
+          <div className="mx-auto flex w-full max-w-3xl shrink-0 flex-col gap-2 pb-4">
             <div className="flex justify-center">
               <AgentSelector
                 defaultAgentType={selectedAgent}
@@ -1366,8 +1386,7 @@ const ConversationTabView = memo(function ConversationTabView({
                 onAgentsLoaded={(agents) => {
                   setAgentsLoaded(true)
                   setUsableAgentCount(
-                    agents.filter((agent) => agent.enabled && agent.available)
-                      .length
+                    agents.filter((agent) => agent.enabled && agent.available).length
                   )
                 }}
                 onOpenAgentsSettings={handleOpenAgentsSettings}
@@ -1389,9 +1408,6 @@ const ConversationTabView = memo(function ConversationTabView({
               </button>
             ) : null}
             <ChatInput
-              // composerConnStatus (not connStatus): a chat draft mid-reconnect
-              // reads "connecting" until the connection's cwd matches, so the
-              // send affordance stays disabled until handleSend would accept it.
               status={composerConnStatus}
               promptCapabilities={conn.promptCapabilities}
               defaultPath={workingDirForConnection}
@@ -1413,9 +1429,7 @@ const ConversationTabView = memo(function ConversationTabView({
               draftStorageKey={draftStorageKey}
               isActive={isActive}
               showActiveFlow={showActiveFlow}
-              onAddFeedback={
-                feedback.featureEnabled ? feedback.openDialog : undefined
-              }
+              onAddFeedback={feedback.featureEnabled ? feedback.openDialog : undefined}
               feedbackAddDisabled={!feedback.canSubmit}
               injectContent={quickActionInject}
               onInjectConsumed={handleQuickActionConsumed}
@@ -1423,9 +1437,12 @@ const ConversationTabView = memo(function ConversationTabView({
               tall
             />
           </div>
-          <div className="flex-1" />
-          <div className="mx-auto w-full max-w-3xl shrink-0 px-4 pb-6">
-            <WelcomeTip />
+          {/* QuickActions pinned below the input box. */}
+          <div className="mx-auto w-full max-w-3xl shrink-0 pb-4">
+            <QuickActions
+              onSelect={handleQuickAction}
+              agentType={selectedAgent}
+            />
           </div>
         </div>
       ) : showDraftHeader ? (

@@ -35,7 +35,7 @@ import {
 import remarkBreaks from "remark-breaks"
 import { markdownLinkComponents } from "./markdown-link"
 import { rehypeCommandBadges } from "./rehype-command-badges"
-import { rehypePluginsAllowingCodeg } from "./rehype-allow-codeg"
+import { rehypePluginsAllowingCodeg } from "./rehype-allow-veryagent"
 import { remarkRewriteFileUriLinks } from "./remark-file-uri-links"
 
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
@@ -390,13 +390,13 @@ const remarkPlugins = [
 // User messages opt in to this set so single newlines render as <br>.
 const remarkPluginsWithBreaks = [...remarkPlugins, remarkBreaks]
 
-// Streamdown's default rehype pipeline strips `codeg://` reference hrefs in
+// Streamdown's default rehype pipeline strips `veryagent://` reference hrefs in
 // sanitization (rendering them as "[blocked]"); re-derive it so they survive to
-// MarkdownLink → ReferenceBadge. See rehype-allow-codeg for the full rationale.
+// MarkdownLink → ReferenceBadge. See rehype-allow-veryagent for the full rationale.
 const rehypePlugins = rehypePluginsAllowingCodeg(defaultRehypePlugins)
 
 // User messages additionally badge bare `/slash` / `$skill` invocation tokens.
-// Appended AFTER harden so the injected `codeg://skill/…` links aren't stripped,
+// Appended AFTER harden so the injected `veryagent://skill/…` links aren't stripped,
 // and it runs before Streamdown's math (katex) rehype plugin so `$x$` math (by
 // then a `.math` element) is skipped, not mistaken for a `$skill` token.
 const rehypePluginsForUser = [...rehypePlugins, rehypeCommandBadges]

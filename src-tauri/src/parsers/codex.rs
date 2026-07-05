@@ -579,7 +579,7 @@ fn infer_tool_call_output_is_error(
 /// Synthetic rawInput key the live input shaper uses to carry the collab op
 /// through to the card (see frontend `collab-tool.ts` `COLLAB_OP_KEY`). Kept in
 /// sync here so history `wait_agent` capsules render with an op-aware title.
-const COLLAB_OP_KEY: &str = "__codegCollabOp";
+const COLLAB_OP_KEY: &str = "__veryagentCollabOp";
 
 /// Whether a collab status string is an error (mirrors the frontend
 /// `isErrorCollabStatusKind`: only `errored` / `failed` / `notFound`).
@@ -2528,7 +2528,7 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .expect("system time ok")
             .as_nanos();
-        let path: PathBuf = env::temp_dir().join(format!("codeg-codex-test-{nanos}.jsonl"));
+        let path: PathBuf = env::temp_dir().join(format!("veryagent-codex-test-{nanos}.jsonl"));
 
         // Injected/duplicate context arrives as text-only `response_item` user
         // messages (AGENTS.md, environment_context); the real prompt is delivered
@@ -2677,7 +2677,7 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .expect("system time ok")
             .as_nanos();
-        let path: PathBuf = env::temp_dir().join(format!("codeg-codex-ctx-{nanos}.jsonl"));
+        let path: PathBuf = env::temp_dir().join(format!("veryagent-codex-ctx-{nanos}.jsonl"));
 
         let content = concat!(
             "{\"timestamp\":\"2026-03-01T10:00:00Z\",\"type\":\"session_meta\",\"payload\":{\"id\":\"ctx-1\",\"cwd\":\"/tmp/demo\"}}\n",
@@ -2719,7 +2719,7 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .expect("system time ok")
             .as_nanos();
-        let path: PathBuf = env::temp_dir().join(format!("codeg-codex-completed-{nanos}.jsonl"));
+        let path: PathBuf = env::temp_dir().join(format!("veryagent-codex-completed-{nanos}.jsonl"));
 
         let content = concat!(
             "{\"timestamp\":\"2026-03-01T10:00:00Z\",\"type\":\"session_meta\",\"payload\":{\"id\":\"completed-1\",\"cwd\":\"/tmp/demo\"}}\n",
@@ -2764,7 +2764,7 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .expect("system time ok")
             .as_nanos();
-        let path: PathBuf = env::temp_dir().join(format!("codeg-codex-goal-{nanos}.jsonl"));
+        let path: PathBuf = env::temp_dir().join(format!("veryagent-codex-goal-{nanos}.jsonl"));
 
         let content = concat!(
             "{\"timestamp\":\"2026-03-01T10:00:00Z\",\"type\":\"session_meta\",\"payload\":{\"id\":\"goal-1\",\"cwd\":\"/tmp/demo\"}}\n",
@@ -2857,7 +2857,7 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .expect("system time ok")
             .as_nanos();
-        let path: PathBuf = env::temp_dir().join(format!("codeg-codex-goalnull-{nanos}.jsonl"));
+        let path: PathBuf = env::temp_dir().join(format!("veryagent-codex-goalnull-{nanos}.jsonl"));
         let content = concat!(
             "{\"timestamp\":\"2026-03-01T10:00:00Z\",\"type\":\"session_meta\",\"payload\":{\"id\":\"gc-1\",\"cwd\":\"/tmp/demo\"}}\n",
             "{\"timestamp\":\"2026-03-01T10:00:01Z\",\"type\":\"turn_context\",\"payload\":{\"model\":\"gpt-5-codex\"}}\n",
@@ -2920,7 +2920,7 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .expect("system time ok")
             .as_nanos();
-        let path: PathBuf = env::temp_dir().join(format!("codeg-codex-puregoal-{nanos}.jsonl"));
+        let path: PathBuf = env::temp_dir().join(format!("veryagent-codex-puregoal-{nanos}.jsonl"));
         let content = concat!(
             "{\"timestamp\":\"2026-03-01T10:00:00Z\",\"type\":\"session_meta\",\"payload\":{\"id\":\"pg-1\",\"cwd\":\"/tmp/demo\"}}\n",
             "{\"timestamp\":\"2026-03-01T10:00:01Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"thread_goal_updated\",\"goal\":{\"objective\":\"Build a static test page\",\"status\":\"active\"}}}\n",
@@ -2993,7 +2993,7 @@ mod tests {
             .expect("system time ok")
             .as_nanos();
         let path: PathBuf =
-            env::temp_dir().join(format!("codeg-codex-goaltext-{nanos}.jsonl"));
+            env::temp_dir().join(format!("veryagent-codex-goaltext-{nanos}.jsonl"));
         let content = concat!(
             "{\"timestamp\":\"2026-03-01T10:00:00Z\",\"type\":\"session_meta\",\"payload\":{\"id\":\"gt-1\",\"cwd\":\"/tmp/demo\"}}\n",
             "{\"timestamp\":\"2026-03-01T10:00:01Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"user_message\",\"message\":\"/goal Analyze the README\"}}\n",
@@ -3041,7 +3041,7 @@ mod tests {
             .expect("system time ok")
             .as_nanos();
         let path: PathBuf =
-            env::temp_dir().join(format!("codeg-codex-goaldup-{nanos}.jsonl"));
+            env::temp_dir().join(format!("veryagent-codex-goaldup-{nanos}.jsonl"));
         let content = concat!(
             "{\"timestamp\":\"2026-03-01T10:00:00Z\",\"type\":\"session_meta\",\"payload\":{\"id\":\"gd-1\",\"cwd\":\"/tmp/demo\"}}\n",
             "{\"timestamp\":\"2026-03-01T10:00:01Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"thread_goal_updated\",\"goal\":{\"objective\":\"Investigate auth\",\"status\":\"active\"}}}\n",
@@ -3090,7 +3090,7 @@ mod tests {
             .expect("system time ok")
             .as_nanos();
         let path: PathBuf =
-            env::temp_dir().join(format!("codeg-codex-goalconfirm-{nanos}.jsonl"));
+            env::temp_dir().join(format!("veryagent-codex-goalconfirm-{nanos}.jsonl"));
         let content = concat!(
             "{\"timestamp\":\"2026-03-01T10:00:00Z\",\"type\":\"session_meta\",\"payload\":{\"id\":\"gc-1\",\"cwd\":\"/tmp/demo\"}}\n",
             "{\"timestamp\":\"2026-03-01T10:00:01Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"thread_goal_updated\",\"goal\":{\"objective\":\"Build a static page\",\"status\":\"active\"}}}\n",
@@ -3159,7 +3159,7 @@ mod tests {
             .expect("system time ok")
             .as_nanos();
         let path: PathBuf =
-            env::temp_dir().join(format!("codeg-codex-sumconfirm-{nanos}.jsonl"));
+            env::temp_dir().join(format!("veryagent-codex-sumconfirm-{nanos}.jsonl"));
         let content = concat!(
             "{\"timestamp\":\"2026-03-01T10:00:00Z\",\"type\":\"session_meta\",\"payload\":{\"id\":\"sc-1\",\"cwd\":\"/tmp/demo\"}}\n",
             "{\"timestamp\":\"2026-03-01T10:00:01Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"thread_goal_updated\",\"goal\":{\"objective\":\"Build a static page\",\"status\":\"active\"}}}\n",
@@ -3195,7 +3195,7 @@ mod tests {
             .expect("system time ok")
             .as_nanos();
         let path: PathBuf =
-            env::temp_dir().join(format!("codeg-codex-sumgoal-{nanos}.jsonl"));
+            env::temp_dir().join(format!("veryagent-codex-sumgoal-{nanos}.jsonl"));
         let content = concat!(
             "{\"timestamp\":\"2026-03-01T10:00:00Z\",\"type\":\"session_meta\",\"payload\":{\"id\":\"sg-1\",\"cwd\":\"/tmp/demo\"}}\n",
             "{\"timestamp\":\"2026-03-01T10:00:01Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"thread_goal_updated\",\"goal\":{\"objective\":\"Build a static test page\",\"status\":\"active\"}}}\n",
@@ -3230,7 +3230,7 @@ mod tests {
             .expect("system time ok")
             .as_nanos();
         let path: PathBuf =
-            env::temp_dir().join(format!("codeg-codex-sumname-{nanos}.jsonl"));
+            env::temp_dir().join(format!("veryagent-codex-sumname-{nanos}.jsonl"));
         let content = concat!(
             "{\"timestamp\":\"2026-03-01T10:00:00Z\",\"type\":\"session_meta\",\"payload\":{\"id\":\"sn-1\",\"cwd\":\"/tmp/demo\"}}\n",
             "{\"timestamp\":\"2026-03-01T10:00:01Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"thread_goal_updated\",\"goal\":{\"objective\":\"Build a static test page\",\"status\":\"active\"}}}\n",
@@ -3262,7 +3262,7 @@ mod tests {
             .expect("system time ok")
             .as_nanos();
         let path: PathBuf =
-            env::temp_dir().join(format!("codeg-codex-sumimg-{nanos}.jsonl"));
+            env::temp_dir().join(format!("veryagent-codex-sumimg-{nanos}.jsonl"));
         let content = concat!(
             "{\"timestamp\":\"2026-03-01T10:00:00Z\",\"type\":\"session_meta\",\"payload\":{\"id\":\"si-1\",\"cwd\":\"/tmp/demo\"}}\n",
             "{\"timestamp\":\"2026-03-01T10:00:01Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"thread_goal_updated\",\"goal\":{\"objective\":\"Do the thing\",\"status\":\"active\"}}}\n",
@@ -3314,7 +3314,7 @@ mod tests {
             .expect("system time ok")
             .as_nanos();
         let path: PathBuf =
-            env::temp_dir().join(format!("codeg-codex-sumnull-{nanos}.jsonl"));
+            env::temp_dir().join(format!("veryagent-codex-sumnull-{nanos}.jsonl"));
         let content = concat!(
             "{\"timestamp\":\"2026-03-01T10:00:00Z\",\"type\":\"session_meta\",\"payload\":{\"id\":\"snl-1\",\"cwd\":\"/tmp/demo\"}}\n",
             "{\"timestamp\":\"2026-03-01T10:00:01Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"thread_goal_updated\",\"goal\":null}}\n",
@@ -3347,7 +3347,7 @@ mod tests {
             .expect("system time ok")
             .as_nanos();
         let path: PathBuf =
-            env::temp_dir().join(format!("codeg-codex-gtxt-{nanos}.jsonl"));
+            env::temp_dir().join(format!("veryagent-codex-gtxt-{nanos}.jsonl"));
         let content = concat!(
             "{\"timestamp\":\"2026-03-01T10:00:00Z\",\"type\":\"session_meta\",\"payload\":{\"id\":\"gt2-1\",\"cwd\":\"/tmp/demo\"}}\n",
             "{\"timestamp\":\"2026-03-01T10:00:01Z\",\"type\":\"event_msg\",\"payload\":{\"type\":\"thread_goal_updated\",\"goal\":{\"objective\":\"Do X\",\"status\":\"active\"}}}\n",
@@ -3400,7 +3400,7 @@ mod tests {
 
         // (a) terminal-only goal → no capture, no synthetic count/title.
         let path_a: PathBuf =
-            env::temp_dir().join(format!("codeg-codex-term-{nanos}.jsonl"));
+            env::temp_dir().join(format!("veryagent-codex-term-{nanos}.jsonl"));
         fs::write(
             &path_a,
             concat!(
@@ -3422,7 +3422,7 @@ mod tests {
         // (b) terminal THEN active → the active objective is captured (not the
         // terminal one), matching the detail parser's first-create_goal capture.
         let path_b: PathBuf =
-            env::temp_dir().join(format!("codeg-codex-termact-{nanos}.jsonl"));
+            env::temp_dir().join(format!("veryagent-codex-termact-{nanos}.jsonl"));
         fs::write(
             &path_b,
             concat!(
@@ -3464,7 +3464,7 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .expect("system time ok")
             .as_nanos();
-        let path: PathBuf = env::temp_dir().join(format!("codeg-codex-img-dedupe-{nanos}.jsonl"));
+        let path: PathBuf = env::temp_dir().join(format!("veryagent-codex-img-dedupe-{nanos}.jsonl"));
 
         let content = concat!(
             "{\"timestamp\":\"2026-05-05T12:35:00Z\",\"type\":\"session_meta\",\"payload\":{\"id\":\"ig-test\",\"cwd\":\"/tmp/demo\"}}\n",
@@ -3518,7 +3518,7 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .expect("system time ok")
             .as_nanos();
-        let path: PathBuf = env::temp_dir().join(format!("codeg-codex-img-mime-{nanos}.jsonl"));
+        let path: PathBuf = env::temp_dir().join(format!("veryagent-codex-img-mime-{nanos}.jsonl"));
 
         let content = concat!(
             "{\"timestamp\":\"2026-05-05T12:35:00Z\",\"type\":\"session_meta\",\"payload\":{\"id\":\"ig-mime\",\"cwd\":\"/tmp/demo\"}}\n",
@@ -3605,7 +3605,7 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .expect("system time ok")
             .as_nanos();
-        let path: PathBuf = env::temp_dir().join(format!("codeg-codex-img-noprompt-{nanos}.jsonl"));
+        let path: PathBuf = env::temp_dir().join(format!("veryagent-codex-img-noprompt-{nanos}.jsonl"));
 
         let content = concat!(
             "{\"timestamp\":\"2026-05-05T12:35:00Z\",\"type\":\"session_meta\",\"payload\":{\"id\":\"ig-noprompt\",\"cwd\":\"/tmp/demo\"}}\n",
@@ -3652,7 +3652,7 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .expect("system time ok")
             .as_nanos();
-        let path: PathBuf = env::temp_dir().join(format!("codeg-codex-img-subagent-{nanos}.jsonl"));
+        let path: PathBuf = env::temp_dir().join(format!("veryagent-codex-img-subagent-{nanos}.jsonl"));
 
         // Sequence:
         //   1. user msg
@@ -3718,7 +3718,7 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .expect("system time ok")
             .as_nanos();
-        let path = env::temp_dir().join(format!("codeg-codex-{tag}-{nanos}.jsonl"));
+        let path = env::temp_dir().join(format!("veryagent-codex-{tag}-{nanos}.jsonl"));
         let mut content = lines.join("\n");
         content.push('\n');
         fs::write(&path, content).expect("write test jsonl");
@@ -4090,7 +4090,7 @@ mod tests {
             .expect("wait capsule carrying A's result");
         assert!(a_cap.contains("agent_a"));
         // op-aware title source is present.
-        assert!(a_cap.contains("__codegCollabOp"));
+        assert!(a_cap.contains("__veryagentCollabOp"));
 
         // The result text must NOT remain on the spawn execution capsules or any
         // tool result (it lives only in the wait capsules now).

@@ -67,13 +67,13 @@ impl WebServerState {
     }
 
     /// Handle to the shutdown coordinator. Exposed so binaries / external
-    /// callers (e.g. `codeg-server`) can pass it to `build_router`.
+    /// callers (e.g. `veryagent-server`) can pass it to `build_router`.
     pub fn shutdown_signal(&self) -> Arc<ShutdownSignal> {
         self.shutdown_signal.clone()
     }
 
     /// Mark the server as running from outside the Tauri command path.
-    /// `codeg-server` calls `axum::serve` directly without going through
+    /// `veryagent-server` calls `axum::serve` directly without going through
     /// `start_web_server`, so without this the `running` flag stays
     /// `false` and `get_web_server_status` lies to web-mode browsers.
     /// Note: handle/shutdown_tx are intentionally left `None` — the bin
@@ -86,7 +86,7 @@ impl WebServerState {
         self.running.store(true, Ordering::Release);
     }
 
-    /// True when the serve task is owned externally (e.g. by `codeg-server`
+    /// True when the serve task is owned externally (e.g. by `veryagent-server`
     /// `axum::serve` in standalone mode), in which case stop/start through
     /// this state must be a no-op.
     pub fn is_externally_managed(&self) -> bool {
@@ -470,7 +470,7 @@ pub fn get_local_addresses(port: u16) -> Vec<String> {
 /// Normalize the host to advertise / store for a freshly bound listener.
 ///
 /// Depending on the runtime, the configured host may not be a bare IP
-/// literal: the standalone `codeg-server` binds via `ToSocketAddrs`, so it
+/// literal: the standalone `veryagent-server` binds via `ToSocketAddrs`, so it
 /// also accepts `localhost` (DNS-resolved) and bracketed IPv6 (`[::1]`),
 /// whereas the desktop/web cores parse a `SocketAddr` and accept only IP
 /// literals (bare or bracketed IPv6, never a hostname). [`addresses_for_bind`]

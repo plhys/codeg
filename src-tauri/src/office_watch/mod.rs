@@ -971,7 +971,7 @@ mod tests {
     #[test]
     fn resolve_office_target_confines_and_filters() {
         let dir = std::env::temp_dir().join(format!(
-            "codeg-ow-confine-{}-{}",
+            "veryagent-ow-confine-{}-{}",
             std::process::id(),
             line!()
         ));
@@ -1000,7 +1000,7 @@ mod tests {
     #[cfg(unix)]
     #[tokio::test]
     async fn ref_count_sharing_and_teardown() {
-        let dir = std::env::temp_dir().join(format!("codeg-ow-ref-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("veryagent-ow-ref-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let docx = dir.join("deck.pptx");
         std::fs::write(&docx, b"x").unwrap();

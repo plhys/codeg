@@ -80,7 +80,7 @@ function WorkspaceDocumentTitle() {
   const { activeFolder } = useActiveFolder()
 
   useEffect(() => {
-    document.title = activeFolder ? `${activeFolder.name} - codeg` : "codeg"
+    document.title = activeFolder ? `${activeFolder.name} - veryagent` : "veryagent"
   }, [activeFolder])
 
   return null
@@ -438,21 +438,25 @@ function FolderWorkspaceShell({ children }: { children: React.ReactNode }) {
   const mainDesiredLayoutRef = useRef<[number, number]>([100, 0])
   const mainAppliedLayoutRef = useRef<[number, number] | null>(null)
 
+  const rafIdRef = useRef(0)
+  const rafIdHeightRef = useRef(0)
+
   useEffect(() => {
     const container = shellContainerRef.current
     if (!container) return
 
-    const updateWidth = (next: number) => {
-      setShellWidth((prev) => (Math.abs(prev - next) < 1 ? prev : next))
-    }
-
-    updateWidth(container.clientWidth)
+    setShellWidth(container.clientWidth)
     const observer = new ResizeObserver((entries) => {
-      updateWidth(entries[0]?.contentRect.width ?? container.clientWidth)
+      cancelAnimationFrame(rafIdRef.current)
+      rafIdRef.current = requestAnimationFrame(() => {
+        const next = entries[0]?.contentRect.width ?? container.clientWidth
+        setShellWidth((prev) => (Math.abs(prev - next) < 1 ? prev : next))
+      })
     })
 
     observer.observe(container)
     return () => {
+      cancelAnimationFrame(rafIdRef.current)
       observer.disconnect()
     }
   }, [])
@@ -461,17 +465,18 @@ function FolderWorkspaceShell({ children }: { children: React.ReactNode }) {
     const container = mainContainerRef.current
     if (!container) return
 
-    const updateHeight = (next: number) => {
-      setMainHeight((prev) => (Math.abs(prev - next) < 1 ? prev : next))
-    }
-
-    updateHeight(container.clientHeight)
+    setMainHeight(container.clientHeight)
     const observer = new ResizeObserver((entries) => {
-      updateHeight(entries[0]?.contentRect.height ?? container.clientHeight)
+      cancelAnimationFrame(rafIdHeightRef.current)
+      rafIdHeightRef.current = requestAnimationFrame(() => {
+        const next = entries[0]?.contentRect.height ?? container.clientHeight
+        setMainHeight((prev) => (Math.abs(prev - next) < 1 ? prev : next))
+      })
     })
 
     observer.observe(container)
     return () => {
+      cancelAnimationFrame(rafIdHeightRef.current)
       observer.disconnect()
     }
   }, [])

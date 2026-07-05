@@ -1,4 +1,4 @@
-//! User-scoped preferences stored at `~/.codeg/preferences.json`.
+//! User-scoped preferences stored at `~/.veryagent/preferences.json`.
 //!
 //! These are settings that must be readable **before** the Tauri builder and
 //! tokio runtime start (e.g. WebView2 rendering flags applied via
@@ -12,7 +12,7 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 
 const PREFERENCES_FILE_NAME: &str = "preferences.json";
-const CODEG_DIR_NAME: &str = ".codeg";
+const CODEG_DIR_NAME: &str = ".veryagent";
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(default)]

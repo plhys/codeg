@@ -98,7 +98,7 @@ mod tauri_app {
     /// On Windows, opt-out users can disable WebView2 hardware acceleration to
     /// work around AMD/Intel GPU driver bugs that produce a black-screen
     /// webview. The flag is stored in a tiny sidecar file at
-    /// `~/.codeg/preferences.json` so it can be read **before** the Tauri
+    /// `~/.veryagent/preferences.json` so it can be read **before** the Tauri
     /// builder, plugins, or tokio runtime start — once a tokio worker is alive,
     /// `std::env::set_var` would race with concurrent `getenv` calls from
     /// libraries like reqwest/rustls that read `HTTP_PROXY` etc.
@@ -157,9 +157,9 @@ mod tauri_app {
         // initialization. The callback runs in the *original* process.
         //
         // Skipped in debug builds so a locally-built `cargo run` instance
-        // can run alongside an installed release build of codeg during
+        // can run alongside an installed release build of veryagent during
         // development. Debug desktop builds use an isolated SQLite file, but
-        // they still share other `app.codeg` data-dir artifacts with release.
+        // they still share other `app.veryagent` data-dir artifacts with release.
         #[cfg(not(debug_assertions))]
         let builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             windows::show_main_window(app);
@@ -194,7 +194,7 @@ mod tauri_app {
             .manage(windows::MergeWindowState::new())
             .manage(web::WebServerState::new())
             // Remote-workspace IPC proxy. Routes HTTP / WS for windows
-            // opened against a remote codeg-server through Rust so we
+            // opened against a remote veryagent-server through Rust so we
             // bypass webview mixed-content blocking and can centrally
             // manage per-window subscriptions.
             .manage(std::sync::Arc::new(
@@ -226,7 +226,7 @@ mod tauri_app {
 
                 // Unify the data root across every consumer:
                 //   * SQLite database (initialised below)
-                //   * `paths::codeg_uploads_root` / `codeg_pets_root`
+                //   * `paths::veryagent_uploads_root` / `veryagent_pets_root`
                 //   * `AppState.data_dir` and every desktop command
                 //     that injects a git credential helper / askpass
                 //     into a subprocess (terminal, ACP, folder ops)
@@ -267,8 +267,8 @@ mod tauri_app {
                 }
 
                 // `CODEG_HOME` overrides `CODEG_DATA_DIR` inside
-                // `paths::codeg_uploads_root` / `codeg_pets_root` for
-                // backwards-compatibility with the legacy `~/.codeg/`
+                // `paths::veryagent_uploads_root` / `veryagent_pets_root` for
+                // backwards-compatibility with the legacy `~/.veryagent/`
                 // layout. If both are set and point at different roots,
                 // uploads/pets land on `CODEG_HOME` while the database
                 // lands on `CODEG_DATA_DIR` — a silent split. The
@@ -342,7 +342,7 @@ mod tauri_app {
                 });
 
                 // Install bundled expert skills into the central store
-                // (`~/.codeg/skills/`). Runs in the background and does
+                // (`~/.veryagent/skills/`). Runs in the background and does
                 // not block startup; failures are logged but non-fatal.
                 tauri::async_runtime::spawn(async move {
                     let report = crate::commands::experts::ensure_central_experts_installed().await;
@@ -629,7 +629,7 @@ mod tauri_app {
 
                 // Automation engine: drives manual + scheduled fires, settles
                 // runs off the event bus, reconciles, and recovers on boot. One
-                // per process; mirrored in `bin/codeg_server.rs`.
+                // per process; mirrored in `bin/veryagent_server.rs`.
                 if let Some(engine) = crate::automation::build_engine(
                     crate::db::AppDatabase {
                         conn: app.state::<crate::db::AppDatabase>().conn.clone(),

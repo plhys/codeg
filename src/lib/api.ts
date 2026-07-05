@@ -444,7 +444,7 @@ export async function acpUpdateHermesConfig(params: {
 
 /**
  * Persist a Kimi Code config update, keeping exactly one source authoritative.
- * `mode` "apikey" writes the codeg-managed ~/.kimi-code/config.toml provider/model
+ * `mode` "apikey" writes the veryagent-managed ~/.kimi-code/config.toml provider/model
  * block AND seeds a synthetic gate token so the API key authenticates `kimi acp`
  * (its session gate only checks for a stored token); "login" clears the managed
  * block + removes our synthetic token so a real OAuth login governs; "raw" writes
@@ -1785,7 +1785,7 @@ export async function createShadcnProject(params: {
 }
 
 /**
- * Detect, per codeg-supported agent, whether the HyperFrames skills are already
+ * Detect, per veryagent-supported agent, whether the HyperFrames skills are already
  * installed globally. Cheap filesystem check, so no long timeout is needed.
  */
 export async function detectHyperframesSkills(): Promise<
@@ -2167,7 +2167,7 @@ export async function uploadAttachment(
   if (file.size === 0) {
     // Skip empty files at the entry — both the web and remote-desktop
     // transports would otherwise dutifully POST a zero-byte multipart part
-    // (the server records it under `~/.codeg/uploads/<bucket>/...`), and
+    // (the server records it under `~/.veryagent/uploads/<bucket>/...`), and
     // we'd attach a ResourceLink to an empty file. Throw the sentinel and
     // let the pool's catch block log + continue.
     throw new EmptyAttachmentError(file.name)
@@ -2216,7 +2216,7 @@ export async function uploadAttachment(
 }
 
 // Upload a file picked from the desktop machine's filesystem to the remote
-// codeg-server bound to the current window. The Tauri-native drag-drop event
+// veryagent-server bound to the current window. The Tauri-native drag-drop event
 // hands us OS paths (not `File` objects), so we read the bytes via Rust,
 // then reuse the same `remote_upload_attachment` channel. Only callable from
 // a window that has a remote workspace attached; non-remote callers should
@@ -3118,7 +3118,7 @@ export interface DelegationSettings {
   /** Per-parent byte budget (in MB) for the broker's in-memory cache of
    * completed sub-agent result text. `0` = unlimited. */
   completed_cache_max_mb: number
-  /** Optional per-agent overrides applied when codeg-mcp spawns a subagent.
+  /** Optional per-agent overrides applied when veryagent-mcp spawns a subagent.
    * Keyed by `agent_type`. Missing entries mean "use agent defaults." */
   agent_defaults?: Partial<Record<AgentType, AgentDelegationDefaults>>
 }
@@ -3203,7 +3203,7 @@ export async function setSessionInfoSettings(
 /** Live probe — opens a transient ACP connection to `agent_type`, reads what
  * it advertises (modes / config_options), and tears down. Used by the
  * delegation-settings UI so the option set on screen matches exactly what
- * codeg-mcp will receive when a subagent is spawned for delegation.
+ * veryagent-mcp will receive when a subagent is spawned for delegation.
  *
  * Does NOT touch chat-side `selectorsCache` or `localStorage` preferences. */
 export async function describeAgentOptions(
@@ -3315,10 +3315,10 @@ export async function exportBackupDesktop(
 ): Promise<BackupManifest | null> {
   const { save } = await import("@tauri-apps/plugin-dialog")
   const encrypted = !!opts.passphrase
-  const ext = encrypted ? "codegbak" : "codeg.zip"
+  const ext = encrypted ? "veryagentbak" : "veryagent.zip"
   const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-")
   const destPath = await save({
-    defaultPath: `codeg-backup-${stamp}.${ext}`,
+    defaultPath: `veryagent-backup-${stamp}.${ext}`,
     filters: [{ name: "Codeg backup", extensions: [ext] }],
   })
   if (!destPath) return null

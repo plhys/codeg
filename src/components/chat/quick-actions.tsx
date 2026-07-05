@@ -14,7 +14,6 @@ import { Lock, type LucideIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { openSettingsWindow, type SettingsSection } from "@/lib/api"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useBuiltInExperts } from "@/hooks/use-built-in-experts"
 import { useEnabledSkillIds } from "@/hooks/use-enabled-skill-ids"
 import { getExpertIcon, pickLocalized } from "@/lib/expert-presentation"
@@ -326,11 +325,6 @@ export function QuickActions({ onSelect, agentType }: QuickActionsProps) {
   // welcome mode, so there is no SSR hydration mismatch), so reopening a new
   // conversation shows the previous choice.
   const [tab, setTab] = useState<QuickActionsTab>(() => loadQuickActionsTab())
-  const handleTabChange = useCallback((value: string) => {
-    const next: QuickActionsTab = value === "office" ? "office" : "coding"
-    setTab(next)
-    saveQuickActionsTab(next)
-  }, [])
 
   const handleOffice = useCallback(
     (action: OfficeAction) => {
@@ -385,39 +379,81 @@ export function QuickActions({ onSelect, agentType }: QuickActionsProps) {
     return { codingFeatured: featured, codingRest: rest }
   }, [experts])
 
-  // A custom-dir pi can't have skills managed by codeg's default-dir store, so
+  // A custom-dir pi can't have skills managed by veryagent's default-dir store, so
   // hide the shortcut cards rather than show ones that lock with a Settings
   // path the Experts/Office matrices also hide for this agent.
   if (!supported) return null
 
-  return (
-    <Tabs value={tab} onValueChange={handleTabChange}>
-      <TabsList className="mx-auto">
-        <TabsTrigger
-          value="coding"
-          className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-        >
-          {t("tabs.coding")}
-        </TabsTrigger>
-        <TabsTrigger
-          value="office"
-          className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
-        >
-          {t("tabs.office")}
-        </TabsTrigger>
-      </TabsList>
+  const tabs: { key: QuickActionsTab; label: string }[] = [
+    { key: "office", label: "日常工作" },
+    { key: "design", label: "设计艺术" },
+    { key: "coding", label: "代码开发" },
+  ]
 
-      <TabsContent value="coding" className="flex flex-col gap-2">
-        {codingFeatured.length > 0 && (
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <div className="flex items-center gap-1 rounded-full bg-muted/50 p-0.5">
+        {tabs.map(({ key, label }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => { setTab(key); saveQuickActionsTab(key) }}
+            className={cn(
+              "rounded-full px-3 py-1 text-xs font-medium transition-all",
+              tab === key
+                ? "bg-background text-foreground shadow ring-1 ring-border/60"
+                : "text-muted-foreground/70 hover:text-foreground"
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "office" && (
+        <div className="flex w-full flex-col gap-2">
           <div className="grid grid-cols-3 gap-2">
-            {codingFeatured.map((f) => (
+            {OFFICE_FIXED.map((action) => (
+              <BigCard
+                key={action.id}
+                icon={action.icon}
+                accent={action.accent}
+                title={t(action.id as Parameters<typeof t>[0])}
+                description={t(`${action.id}Desc` as Parameters<typeof t>[0])}
+                onClick={() => handleOffice(action)}
+                locked={isLocked(action.skillId)}
+                lockHint={lockHint}
+              />
+            ))}
+          </div>
+          <Marquee itemCount={OFFICE_SCROLL.length}>
+            {(clone) =>
+              OFFICE_SCROLL.map((action) => (
+                <SkillBar
+                  key={`${action.id}-${clone ? "c" : "r"}`}
+                  clone={clone}
+                  icon={action.icon}
+                  label={t(action.id as Parameters<typeof t>[0])}
+                  title={t(`${action.id}Desc` as Parameters<typeof t>[0])}
+                  onClick={() => handleOffice(action)}
+                  locked={isLocked(action.skillId)}
+                  lockHint={lockHint}
+                />
+              ))
+            }
+          </Marquee>
+        </div>
+      )}
+
+      {tab === "design" && (
+        <div className="flex w-full flex-col gap-2">
+          <div className="grid grid-cols-3 gap-2">
+            {codingFeatured.slice(0, 3).map((f) => (
               <BigCard
                 key={f.id}
                 icon={getExpertIcon(f.item.metadata.icon)}
                 accent={f.accent}
-                title={
-                  pickLocalized(f.item.metadata.display_name, locale) || f.id
-                }
+                title={pickLocalized(f.item.metadata.display_name, locale) || f.id}
                 description={t(f.descKey as Parameters<typeof t>[0])}
                 onClick={() => handleExpert(f.item)}
                 locked={isLocked(f.item.metadata.id)}
@@ -425,62 +461,67 @@ export function QuickActions({ onSelect, agentType }: QuickActionsProps) {
               />
             ))}
           </div>
-        )}
-        <Marquee itemCount={codingRest.length}>
-          {(clone) =>
-            codingRest.map((item) => {
-              const label =
-                pickLocalized(item.metadata.display_name, locale) ||
-                item.metadata.id
-              return (
-                <SkillBar
-                  key={`${item.metadata.id}-${clone ? "c" : "r"}`}
-                  clone={clone}
-                  icon={getExpertIcon(item.metadata.icon)}
-                  label={label}
-                  title={pickLocalized(item.metadata.description, locale)}
-                  onClick={() => handleExpert(item)}
-                  locked={isLocked(item.metadata.id)}
+          <Marquee itemCount={codingRest.length}>
+            {(clone) =>
+              codingRest.slice(0, 6).map((item) => {
+                const label = pickLocalized(item.metadata.display_name, locale) || item.metadata.id
+                return (
+                  <SkillBar
+                    key={`${item.metadata.id}-${clone ? "c" : "r"}`}
+                    clone={clone}
+                    icon={getExpertIcon(item.metadata.icon)}
+                    label={label}
+                    title={pickLocalized(item.metadata.description, locale)}
+                    onClick={() => handleExpert(item)}
+                    locked={isLocked(item.metadata.id)}
+                    lockHint={lockHint}
+                  />
+                )
+              })
+            }
+          </Marquee>
+        </div>
+      )}
+
+      {tab === "coding" && (
+        <div className="flex w-full flex-col gap-2">
+          {codingFeatured.length > 0 && (
+            <div className="grid grid-cols-3 gap-2">
+              {codingFeatured.map((f) => (
+                <BigCard
+                  key={f.id}
+                  icon={getExpertIcon(f.item.metadata.icon)}
+                  accent={f.accent}
+                  title={pickLocalized(f.item.metadata.display_name, locale) || f.id}
+                  description={t(f.descKey as Parameters<typeof t>[0])}
+                  onClick={() => handleExpert(f.item)}
+                  locked={isLocked(f.item.metadata.id)}
                   lockHint={lockHint}
                 />
-              )
-            })
-          }
-        </Marquee>
-      </TabsContent>
-
-      <TabsContent value="office" className="flex flex-col gap-2">
-        <div className="grid grid-cols-3 gap-2">
-          {OFFICE_FIXED.map((action) => (
-            <BigCard
-              key={action.id}
-              icon={action.icon}
-              accent={action.accent}
-              title={t(action.id as Parameters<typeof t>[0])}
-              description={t(`${action.id}Desc` as Parameters<typeof t>[0])}
-              onClick={() => handleOffice(action)}
-              locked={isLocked(action.skillId)}
-              lockHint={lockHint}
-            />
-          ))}
+              ))}
+            </div>
+          )}
+          <Marquee itemCount={codingRest.length}>
+            {(clone) =>
+              codingRest.map((item) => {
+                const label = pickLocalized(item.metadata.display_name, locale) || item.metadata.id
+                return (
+                  <SkillBar
+                    key={`${item.metadata.id}-${clone ? "c" : "r"}`}
+                    clone={clone}
+                    icon={getExpertIcon(item.metadata.icon)}
+                    label={label}
+                    title={pickLocalized(item.metadata.description, locale)}
+                    onClick={() => handleExpert(item)}
+                    locked={isLocked(item.metadata.id)}
+                    lockHint={lockHint}
+                  />
+                )
+              })
+            }
+          </Marquee>
         </div>
-        <Marquee itemCount={OFFICE_SCROLL.length}>
-          {(clone) =>
-            OFFICE_SCROLL.map((action) => (
-              <SkillBar
-                key={`${action.id}-${clone ? "c" : "r"}`}
-                clone={clone}
-                icon={action.icon}
-                label={t(action.id as Parameters<typeof t>[0])}
-                title={t(`${action.id}Desc` as Parameters<typeof t>[0])}
-                onClick={() => handleOffice(action)}
-                locked={isLocked(action.skillId)}
-                lockHint={lockHint}
-              />
-            ))
-          }
-        </Marquee>
-      </TabsContent>
-    </Tabs>
+      )}
+    </div>
   )
 }

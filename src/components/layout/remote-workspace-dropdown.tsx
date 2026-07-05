@@ -49,7 +49,7 @@ export function RemoteWorkspaceDropdown() {
             className="h-6 w-6 hover:text-foreground/80"
             title={t("openRemoteWorkspace")}
           >
-            <MonitorCloud className="h-3.5 w-3.5" />
+            <MonitorCloud className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-72">
@@ -69,7 +69,7 @@ export function RemoteWorkspaceDropdown() {
                   })
                 }}
               >
-                <MonitorCloud className="h-3.5 w-3.5" />
+                <MonitorCloud className="h-4 w-4" />
                 <span className="min-w-0">
                   <span className="block truncate">{connection.name}</span>
                   <span className="block truncate text-xs text-muted-foreground">
@@ -81,7 +81,7 @@ export function RemoteWorkspaceDropdown() {
           )}
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setManageOpen(true)}>
-            <Settings className="h-3.5 w-3.5" />
+            <Settings className="h-4 w-4" />
             {t("manage")}
           </DropdownMenuItem>
         </DropdownMenuContent>
