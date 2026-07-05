@@ -1,33 +1,11 @@
-# Codeg
+# 🐱 veryAgent Desktop
 
-[![Release](https://img.shields.io/github/v/release/xintaofei/veryagent)](https://github.com/xintaofei/veryagent/releases)
-[![License](https://img.shields.io/github/license/xintaofei/veryagent)](./LICENSE)
+[![Release](https://img.shields.io/github/v/release/plhys/veryagent-desktop)](https://github.com/plhys/veryagent-desktop/releases)
+[![License](https://img.shields.io/github/license/plhys/veryagent-desktop)](./LICENSE)
 [![Tauri](https://img.shields.io/badge/Tauri-2.x-24C8DB)](https://tauri.app/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
-[![Docker](https://img.shields.io/badge/Docker-ready-2496ED)](./Dockerfile)
 
-<p>
-  <strong>English</strong> |
-  <a href="./docs/readme/README.zh-CN.md">简体中文</a> |
-  <a href="./docs/readme/README.zh-TW.md">繁體中文</a> |
-  <a href="./docs/readme/README.ja.md">日本語</a> |
-  <a href="./docs/readme/README.ko.md">한국어</a> |
-  <a href="./docs/readme/README.es.md">Español</a> |
-  <a href="./docs/readme/README.de.md">Deutsch</a> |
-  <a href="./docs/readme/README.fr.md">Français</a> |
-  <a href="./docs/readme/README.pt.md">Português</a> |
-  <a href="./docs/readme/README.ar.md">العربية</a>
-</p>
-
-Codeg (Code Generation) is a multi-agent coding workspace. It brings multiple agents (Claude Code, Codex CLI, OpenCode, Gemini CLI, OpenClaw, Cline, Hermes Agent, CodeBuddy, Kimi Code, Pi, etc.) into one workspace, supporting conversation aggregation and multi-agent collaboration, with desktop installation plus server/Docker deployment.
-
-![gallery](./docs/images/gallery.svg)
-
-## Sponsors
-
-<table>
-  <tr>
-    <td colspan="2" align="center">
+veryAgent Desktop is a multi-agent AI workspace for developers — chat with multiple AI agents in one unified interface, with support for conversation management, file editing, terminal access, and more.
       <a href="https://myclaw.ai/?utm_source=github&utm_campaign=veryagent" target="_blank"><img src="https://raw.githubusercontent.com/LeoYeAI/myclaw-sponsor-preview/main/banner.svg" alt="MyClaw.ai — Your OpenClaw Agent, Always On." /></a><br/>
       <strong><a href="https://myclaw.ai/?utm_source=github&utm_campaign=veryagent">MyClaw.ai</a></strong> — A fully managed OpenClaw cloud platform with one-click setup, 24/7 uptime, and full data ownership — no server management required.
     </td>
