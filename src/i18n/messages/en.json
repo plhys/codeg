@@ -2102,6 +2102,7 @@
         "autoConnectAppend": "{message}. Click to open {path} and manage installation.",
         "enableAgentFirstPlaceholder": "Enable at least one agent before starting a session...",
         "prepareSessionFailed": "Couldn't prepare the chat session. Please try again.",
+        "preparingWorkspace": "Preparing workspace...",
         "createConversationFailed": "Couldn't create the conversation. Please try again.",
         "askAnythingPlaceholder": "Ask anything..."
       },

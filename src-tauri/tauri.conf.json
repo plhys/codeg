@@ -31,7 +31,7 @@
       "../out": "web/"
     },
     "externalBin": [
-      "binaries/codeg-mcp"
+      "binaries/veryagent-mcp"
     ],
     "windows": {
       "nsis": {

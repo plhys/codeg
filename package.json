@@ -2,7 +2,7 @@
   "name": "veryagent",
   "private": true,
   "version": "0.18.8",
-  "packageManager": "pnpm@11.9.0",
+  "packageManager": "pnpm@10.13.1",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",

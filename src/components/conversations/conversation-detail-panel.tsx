@@ -1360,18 +1360,22 @@ const ConversationTabView = memo(function ConversationTabView({
     >
 	      {isWelcomeMode ? (
 	        <div className="flex h-full min-h-0 flex-col items-center overflow-x-hidden overflow-y-auto px-4">
-	          {/* Logo — centered, slightly above middle. */}
-          <div className="flex-[0.6]" />
-          <img
-            src="/welcome-logo.png"
-            alt="veryagent"
-            className="h-auto w-48 shrink-0 select-none"
-          />
+	          {/* Logo video — centered, slightly above middle. */}
+          <div className="mt-[calc(20vh-30px)] flex shrink-0 flex-col items-center">
+            <video
+              src="/welcome-logo.webm"
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="h-auto w-48 shrink-0 select-none"
+            />
 
           {/* Greeting + tip below the logo. */}
           <div className="mt-5 flex w-full max-w-3xl shrink-0 flex-col items-center gap-2">
             <WelcomeHero />
             <WelcomeTip />
+          </div>
           </div>
 
           <div className="flex-1" />

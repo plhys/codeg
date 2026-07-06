@@ -2102,6 +2102,7 @@
         "autoConnectAppend": "{message}，点击前往 {path} 管理安装。",
         "enableAgentFirstPlaceholder": "请先启用至少一个 Agent 后开始会话...",
         "prepareSessionFailed": "无法准备聊天会话，请重试。",
+        "preparingWorkspace": "正在准备工作区...",
         "createConversationFailed": "无法创建会话，请重试。",
         "askAnythingPlaceholder": "请开始输入..."
       },
